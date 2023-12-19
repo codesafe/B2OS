@@ -1,42 +1,55 @@
-[org 0x7c00]
 
-mov ah, 0x0e
+BITS 16
+org 0x7c00
 
-mov bp, 0x9000 ; set the stack
-mov sp, bp
+jmp start
 
-mov bx, MSG_REAL_MODE
-call print ; This will be written after the BIOS messages
-
-call switch_to_pm
-jmp $ ; this will actually never be executed
-
-
-;%include "../05-bootsector-functions-strings/boot_sect_print.asm"
 %include "gdt.asm"
-%include "print32.asm"
 %include "switch32.asm"
 
+start:
+	xor	ax, ax				; null segments
+	mov	ds, ax
+	mov	es, ax
+	mov	ax, 0x9000			; stack begins at 0x9000-0xffff
+	mov	ss, ax
+	mov	sp, 0xFFFF
+	
+;--------------------------------------
 
-the_secret:
-    ; ASCII code 0x58 ('X') is stored just before the zero-padding.
-    ; On this code that is at byte 0x2d (check it out using 'xxd file.bin')
-    db "X"
+     ; Install GDT
+    cli
+	lgdt [GDT_descriptor]
+	
+	; Switch 32 Bit
+	call SWITCH_32
+	
+	cli                     ; off interrupt
+	jmp CODE_SEG:Entry32Bit ; CS will be Auto-Updated to CODE_SEG
 
+	jmp $
 
+%include "print32.asm"
 
-; "oooooooooo.    .oooo.             .oooooo.    .oooooo..o", 0x0a,0x0d,
-; "`888'   `Y8b .dP""Y88b           d8P'  `Y8b  d8P'    `Y8"
-; " 888     888       ]8P'         888      888 Y88bo."
-; " 888oooo888'     .d8P'          888      888  `"Y8888o."
-; " 888    `88b   .dP'     8888888 888      888      `"Y88b" 
-; " 888    .88P .oP     .o         `88b    d88' oo     .d8P"
-; "o888bood8P'  8888888888          `Y8bood8P'  8""88888P'"
-                                                         
-                                                         
-                                                         
+[BITS 32]
 
+Entry32Bit:
+	; Reload stack and data segment registers with GDT entry
+	mov ax, DATA_SEG
+	mov ds, ax
+	mov ss, ax
+	mov sp, 0xffff
+	
+    call Clear32
 
-; zero padding and magic bios number
-times 510-($-$$) db 0
-dw 0xaa55
+	mov si, Bit32Str
+	call Print32
+	
+	; Halting the system
+	cli
+	hlt
+
+Bit32Str db "Starting 32Bit B2-OS !", 0	
+
+	times 510-($-$$) db 0
+	dw 0xaa55

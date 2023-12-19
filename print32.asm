@@ -1,26 +1,44 @@
 [bits 32]
 
-; this is how constants are defined
+
 VIDEO_MEMORY    equ 0xb8000
-WHITE_ON_BLACK  equ 0x0f ; the color byte for each character
+WHITE_ON_BLACK  equ 0x0f
 
-print_string_pm:
-    pusha
-    mov edx, VIDEO_MEMORY
+;############################## Print32
 
-print_string_pm_loop:
-    mov al, [ebx] ; [ebx] is the address of our character
+Print32:
+	mov edi, VIDEO_MEMORY
     mov ah, WHITE_ON_BLACK
+    
+.repeat:
+	lodsb
+	or al, al
+	jz .done
+	mov byte [edi], al
+	inc edi
+	mov byte [edi], 0x1B
+	inc edi
+	call .repeat
+.done:
+	ret
+	    
+;############################## Clear
 
-    cmp al, 0 ; check if end of string
-    je print_string_pm_done
+Clear32 :
+	mov edi, VIDEO_MEMORY
+    mov ah, WHITE_ON_BLACK
+    mov bx, 0xC80 ; 80x40
 
-    mov [edx], ax ; store character + attribute in video memory
-    add ebx, 1 ; next char
-    add edx, 2 ; next video memory position
+.c_repeat:
+	lodsb
+	or bx, bx
+	jz .c_done
 
-    jmp print_string_pm_loop
-
-print_string_pm_done:
-    popa
-    ret
+	mov byte [edi], ' ';al
+	inc edi
+	mov byte [edi], WHITE_ON_BLACK
+	inc edi
+    dec bx
+	call .c_repeat
+.c_done:
+	ret
