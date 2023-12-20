@@ -2,6 +2,8 @@
 BITS 16
 org 0x7c00
 
+KERNEL_LOCATION	equ	0x1000
+
 jmp start
 
 %include "gdt.asm"
@@ -46,8 +48,10 @@ Entry32Bit:
 	call Print32
 	
 	; Halting the system
-	cli
-	hlt
+	;cli
+	;hlt
+
+	jmp KERNEL_LOCATION
 
 Bit32Str db "Starting 32Bit B2-OS !", 0	
 
