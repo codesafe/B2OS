@@ -1,6 +1,6 @@
 
-BITS 16
-org 0x7c00
+[BITS 16]
+[org 0x7c00]
 
 KERNEL_LOCATION	equ	0x1000
 
@@ -10,12 +10,29 @@ jmp start
 %include "switch32.asm"
 
 start:
-	xor	ax, ax				; null segments
-	mov	ds, ax
-	mov	es, ax
-	mov	ax, 0x9000			; stack begins at 0x9000-0xffff
-	mov	ss, ax
-	mov	sp, 0xFFFF
+	mov [BOOT_DISK], dl             
+
+	xor ax, ax                          
+	mov es, ax
+	mov ds, ax
+	mov bp, 0x8000
+	mov sp, bp
+
+	mov bx, KERNEL_LOCATION
+	mov dh, 2
+
+	mov ah, 0x02
+	mov al, dh 
+	mov ch, 0x00
+	mov dh, 0x00
+	mov cl, 0x02
+	mov dl, [BOOT_DISK]
+	int 0x13                ; no error management, do your homework!
+
+										
+	mov ah, 0x0
+	mov al, 0x3
+	int 0x10                ; text mode
 	
 ;--------------------------------------
 
@@ -31,6 +48,8 @@ start:
 
 	jmp $
 
+	BOOT_DISK: db 0
+
 %include "print32.asm"
 
 [BITS 32]
@@ -40,18 +59,25 @@ Entry32Bit:
 	mov ax, DATA_SEG
 	mov ds, ax
 	mov ss, ax
-	mov sp, 0xffff
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
 	
-    call Clear32
+	mov ebp, 0x90000		; 32 bit stack base pointer
+	mov esp, ebp
+	
+    ;call Clear32
 
-	mov si, Bit32Str
-	call Print32
-	
-	; Halting the system
-	;cli
-	;hlt
+	;mov si, Bit32Str
+	;call Print32
 
 	jmp KERNEL_LOCATION
+
+	; Halting the system
+	cli
+	hlt
+
+
 
 Bit32Str db "Starting 32Bit B2-OS !", 0	
 

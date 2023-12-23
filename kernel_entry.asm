@@ -1,5 +1,5 @@
 section .text
     [bits 32]
-    [extern kmain]
-    call kmain
+    [extern main]
+    call main
     jmp $
