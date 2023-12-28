@@ -15,7 +15,7 @@ sudo apt install libmpfr-dev
 sudo apt install texinfo
 
 #cURL (needed to clone some required files)
-sudo apt-get install curl
+sudo apt-get install curl -y
 
 export PREFIX="/usr/local/i386elfgcc"
 export TARGET=i386-elf
@@ -23,16 +23,16 @@ export PATH="$PREFIX/bin:$PATH"
 
 mkdir /tmp/src
 cd /tmp/src
-curl -O http://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.gz
-tar xf binutils-2.39.tar.gz
+curl -O http://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.gz -y
+tar xf binutils-2.39.tar.gz -y
 mkdir binutils-build
 cd binutils-build
 ../binutils-2.39/configure --target=$TARGET --enable-interwork --enable-multilib --disable-nls --disable-werror --prefix=$PREFIX 2>&1 | tee configure.log
 sudo make all install 2>&1 | tee make.log
 
 cd /tmp/src
-curl -O https://ftp.gnu.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.gz
-tar xf gcc-12.2.0.tar.gz
+curl -O -k https://ftp.gnu.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.gz -y
+tar xf gcc-12.2.0.tar.gz -y
 mkdir gcc-build
 cd gcc-build
 echo Configure: . . . . . . .

@@ -6,8 +6,8 @@ KERNEL_LOCATION	equ	0x1000
 
 jmp start
 
-%include "gdt.asm"
-%include "switch32.asm"
+%include "Asm/gdt.asm"
+%include "Asm/switch32.asm"
 
 start:
 	mov [BOOT_DISK], dl             
@@ -50,7 +50,7 @@ start:
 
 	BOOT_DISK: db 0
 
-%include "print32.asm"
+%include "Asm/print32.asm"
 
 [BITS 32]
 
