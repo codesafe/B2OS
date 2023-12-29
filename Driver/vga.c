@@ -1,19 +1,11 @@
-/*
-    vga.cpp - VGA class implementation to communicate in text or graphics mode
-
-	References:
-    - https://files.osdev.org/mirrors/geezer/osd/graphics/modes.c
-*/
-
 #include "vga.h"
-
 //using namespace morphios::common;
 //using namespace morphios::drivers;
 //using namespace morphios::kernel;
 
-VGA::VGA()
-/*
-  : VGA_AC_INDEX(0x3C0),
+void VGA_Init()
+{
+	VGA_AC_INDEX(0x3C0),
 	VGA_AC_WRITE(0x3C0),
 	VGA_AC_READ(0x3C1),
 	VGA_MISC_READ(0x3CC),
@@ -25,20 +17,17 @@ VGA::VGA()
 	VGA_CRTC_INDEX(0x3D4),
 	VGA_CRTC_DATA(0x3D5),
 	VGA_INSTAT_READ(0x3DA)
-*/    
-{}
-
-VGA::~VGA() {}
+}
 
 // Text mode methods
 
-size_t VGA::terminal_row = 0;
-size_t VGA::terminal_column = 0;
-uint8_t VGA::terminal_colour = 0;
-uint16_t* VGA::terminal_buffer = 0;
-bool VGA::isWelcome = true;
+size_t terminal_row = 0;
+size_t terminal_column = 0;
+uint8_t terminal_colour = 0;
+uint16_t* terminal_buffer = 0;
+bool isWelcome = true;
 
-void VGA::terminal_initialize(void) 
+void terminal_initialize(void) 
 {
 	terminal_row = 0;
 	terminal_column = 0;
@@ -52,17 +41,17 @@ void VGA::terminal_initialize(void)
 	}
 }
 
-void VGA::terminal_setcolour(uint8_t colour) 
+void terminal_setcolour(uint8_t colour) 
 {
 	terminal_colour = colour;
 }
  
-void VGA::terminal_putentryat(char c, uint8_t colour, size_t x, size_t y) {
+void terminal_putentryat(char c, uint8_t colour, size_t x, size_t y) {
 	const size_t index = y * VGA_TEXT_MODE_WIDTH + x;
 	terminal_buffer[index] = vga_entry(c, colour);
 }
 
-void VGA::terminal_putchar(char c) 
+void terminal_putchar(char c) 
 {
 	if (c == '\n') 
     {
@@ -96,13 +85,13 @@ void VGA::terminal_putchar(char c)
 	}	
 }
  
-void VGA::terminal_write(const char* data, size_t size) 
+void terminal_write(const char* data, size_t size) 
 {
 	for (size_t i = 0; i < size; i++)
 		terminal_putchar(data[i]);
 }
 
-void VGA::print_welcome_msg() 
+void print_welcome_msg() 
 {
 	kprintf("                               __    _ ____  _____\n");
 	kprintf("   ____ ___  ____  _________  / /_  (_) __ \\/ ___/\n");
@@ -116,13 +105,14 @@ void VGA::print_welcome_msg()
 
 // Graphics mode methods
 
-bool VGA::setMode(uint32_t width, uint32_t height, uint32_t colourDepth) {
+bool setMode(uint32_t width, uint32_t height, uint32_t colourDepth)
+{
 	if (!supportsMode(width, height, colourDepth))
 		return false;
 	
-	this->VGA_GRAPHICS_MODE_WIDTH = width;
-	this->VGA_GRAPHICS_MODE_HEIGHT = height;
-	this->VGA_GRAPHICS_MODE_COLOURDEPTH = colourDepth;
+	VGA_GRAPHICS_MODE_WIDTH = width;
+	VGA_GRAPHICS_MODE_HEIGHT = height;
+	VGA_GRAPHICS_MODE_COLOURDEPTH = colourDepth;
 	
 	// register sets
 	unsigned char g_320x200x256[] =	{
@@ -145,20 +135,20 @@ bool VGA::setMode(uint32_t width, uint32_t height, uint32_t colourDepth) {
 	};
 	writeRegisters(g_320x200x256);
 
-	this->frameBufferSegment = getFrameBufferSegment();
+	frameBufferSegment = getFrameBufferSegment();
 
 	return true;
 }
 
 // TODO: add support for other display modes
-bool VGA::supportsMode(uint32_t width, uint32_t height, uint32_t colourDepth) 
+bool supportsMode(uint32_t width, uint32_t height, uint32_t colourDepth) 
 {
 	if ((width == 320) && (height == 200) && (colourDepth == 8))
 		return true;
 	return false;
 }
 
-void VGA::writeRegisters(uint8_t* regs) 
+void writeRegisters(uint8_t* regs) 
 {
 #if 0
 	// Write Misc registers
@@ -206,12 +196,12 @@ void VGA::writeRegisters(uint8_t* regs)
 }
 
 
-void VGA::putPixel(int32_t x, int32_t y,  uint8_t r, uint8_t g, uint8_t b) 
+void putPixel(int32_t x, int32_t y,  uint8_t r, uint8_t g, uint8_t b) 
 {
 	putPixel(x, y, getColorIndex(r, g, b));
 }
 
-void VGA::putPixel(int32_t x, int32_t y, uint8_t colourIndex) {
+void putPixel(int32_t x, int32_t y, uint8_t colourIndex) {
 	// Limit pixel writing to within the screen width
 	if(x < 0 || VGA_GRAPHICS_MODE_WIDTH <= x || y < 0 || VGA_GRAPHICS_MODE_HEIGHT <= y)
         return;
@@ -222,7 +212,8 @@ void VGA::putPixel(int32_t x, int32_t y, uint8_t colourIndex) {
 
 // Converts RGB colours to the VGA colour
 // TODO: add all 256 VGA colours
-uint8_t VGA::getColorIndex(uint8_t r, uint8_t g, uint8_t b) {
+uint8_t getColorIndex(uint8_t r, uint8_t g, uint8_t b) 
+{
 	if(r == 0x00 && g == 0x00 && b == 0x00) return VGA_COLOUR_BLACK;
     if(r == 0x00 && g == 0x00 && b == 0xA8) return VGA_COLOUR_BLUE;
     if(r == 0x00 && g == 0xA8 && b == 0x00) return VGA_COLOUR_GREEN;
@@ -233,7 +224,7 @@ uint8_t VGA::getColorIndex(uint8_t r, uint8_t g, uint8_t b) {
 
 // VGA framebuffer is at A000:0000, B000:0000, or B800:0000
 // depending on bits in GC 6
-uint8_t* VGA::getFrameBufferSegment() 
+uint8_t* getFrameBufferSegment() 
 {
 #if 0    
 	VGA_GC_INDEX.write(0x06);
@@ -249,7 +240,7 @@ uint8_t* VGA::getFrameBufferSegment()
     return (uint8_t*)0xB8000;
 }
 
-void VGA::putLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1,  uint8_t r, uint8_t g, uint8_t b) 
+void putLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1,  uint8_t r, uint8_t g, uint8_t b) 
 {
 	
 	// Using Bresenham's line algorithm
@@ -273,7 +264,7 @@ void VGA::putLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1,  uint8_t r, ui
 		_x += 1;
 	}
 }
-void VGA::putRect(int32_t x0, int32_t y0, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b) 
+void putRect(int32_t x0, int32_t y0, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b) 
 {
 	for(int32_t y = y0; y < y0 + h; y++) {
 		for(int32_t x = x0; x < x0 + w; x++) {
@@ -282,7 +273,7 @@ void VGA::putRect(int32_t x0, int32_t y0, int32_t w, int32_t h, uint8_t r, uint8
 	}
 }
 
-size_t  VGA::strlen(const char* str) 
+size_t  strlen(const char* str) 
 {
 	size_t len = 0;
 	while (str[len])
@@ -290,7 +281,7 @@ size_t  VGA::strlen(const char* str)
 	return len;
 }
 
-void  VGA::kprintf(const char* data) 
+void  kprintf(const char* data) 
 {
 	terminal_write(data, strlen(data));
 }

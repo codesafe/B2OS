@@ -1,9 +1,3 @@
-/*
-    vga.h - VGA class header to communicate in text or graphics mode
-
-    References:
-    - https://files.osdev.org/mirrors/geezer/osd/graphics/modes.c
-*/
 
 #ifndef VGA_H
 #define VGA_H
@@ -18,9 +12,7 @@
 #define	VGA_NUM_GC_REGS		9
 #define	VGA_NUM_AC_REGS		21
 
-class VGA 
-{
-protected:
+
 /*
     // VGA Ports
     kernel::Port8Bit VGA_AC_INDEX;
@@ -63,10 +55,12 @@ protected:
         VGA_COLOUR_WHITE = 15,
     };
 
+    void VGA_Init();
+
     // Graphics mode methods
     void writeRegisters(uint8_t* registers);
     uint8_t* getFrameBufferSegment();
-    virtual uint8_t getColorIndex(uint8_t r, uint8_t g, uint8_t b);
+    uint8_t getColorIndex(uint8_t r, uint8_t g, uint8_t b);
 
     // Text mode methods
     static inline uint8_t vga_entry_colour(enum vga_colour fg, enum vga_colour bg) 
@@ -83,7 +77,6 @@ protected:
     void terminal_putentryat(char c, uint8_t colour, size_t x, size_t y);
     void terminal_putchar(char c);
 
-public:
     // Text mode variables
     // Defined as static as they are global in scope
     static const size_t VGA_TEXT_MODE_WIDTH = 80;
@@ -95,8 +88,8 @@ public:
     static bool isWelcome; // For checking if it is a welcome message, stops printing "$ "  
 
     // Public methods
-    VGA(); // Constructor
-    ~VGA(); // Destructor
+    //VGA(); // Constructor
+    //~VGA(); // Destructor
 
     // Text mode methods
     void terminal_initialize(void);
@@ -106,12 +99,12 @@ public:
     void kprintf(const char* data);
 
     // Graphics mode methods
-    virtual bool setMode(uint32_t width, uint32_t height, uint32_t colourDepth);
-    virtual bool supportsMode(uint32_t width, uint32_t height, uint32_t colourDepth);    
-    virtual void putPixel(int32_t x, int32_t y, uint8_t r, uint8_t g, uint8_t b);
-    virtual void putPixel(int32_t x, int32_t y, uint8_t colourIndex);
-    virtual void putLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint8_t r, uint8_t g, uint8_t b);
-    virtual void putRect(int32_t x0, int32_t y0, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b);
-};
+    bool setMode(uint32_t width, uint32_t height, uint32_t colourDepth);
+    bool supportsMode(uint32_t width, uint32_t height, uint32_t colourDepth);    
+    void putPixel(int32_t x, int32_t y, uint8_t r, uint8_t g, uint8_t b);
+    void putPixel(int32_t x, int32_t y, uint8_t colourIndex);
+    void putLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint8_t r, uint8_t g, uint8_t b);
+    void putRect(int32_t x0, int32_t y0, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b);
+
 
 #endif // VGA_H

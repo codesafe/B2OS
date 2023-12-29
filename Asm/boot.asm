@@ -10,12 +10,12 @@ jmp start
 %include "Asm/switch32.asm"
 
 start:
-	mov [BOOT_DISK], dl             
+	mov [BOOT_DISK], dl ; 나중을 위하여 boot drive를 기억
 
-	xor ax, ax                          
+	xor ax, ax	; 0 reset                          
 	mov es, ax
 	mov ds, ax
-	mov bp, 0x8000
+	mov bp, 0x8000	; stack은 여기부터
 	mov sp, bp
 
 	mov bx, KERNEL_LOCATION
@@ -29,7 +29,7 @@ start:
 	mov dl, [BOOT_DISK]
 	int 0x13                ; no error management, do your homework!
 
-										
+	; clear screen										
 	mov ah, 0x0
 	mov al, 0x3
 	int 0x10                ; text mode
