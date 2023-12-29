@@ -1,6 +1,10 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+typedef char bool;
+#define true 1
+#define false 0
+
 typedef char int8_t;
 typedef unsigned char uint8_t;
 

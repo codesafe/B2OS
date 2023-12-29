@@ -63,12 +63,12 @@
     uint8_t getColorIndex(uint8_t r, uint8_t g, uint8_t b);
 
     // Text mode methods
-    static inline uint8_t vga_entry_colour(enum vga_colour fg, enum vga_colour bg) 
+    uint8_t vga_entry_colour(enum vga_colour fg, enum vga_colour bg) 
     {
         return fg | bg << 4;
     }
     
-    static inline uint16_t vga_entry(unsigned char uc, uint8_t colour) 
+    uint16_t vga_entry(unsigned char uc, uint8_t colour) 
     {
         return (uint16_t) uc | (uint16_t) colour << 8;
     }
@@ -79,13 +79,13 @@
 
     // Text mode variables
     // Defined as static as they are global in scope
-    static const size_t VGA_TEXT_MODE_WIDTH = 80;
-    static const size_t VGA_TEXT_MODE_HEIGHT = 25;
-    static size_t terminal_row;
-    static size_t terminal_column;
-    static uint8_t terminal_colour;
-    static uint16_t *terminal_buffer;
-    static bool isWelcome; // For checking if it is a welcome message, stops printing "$ "  
+    const size_t VGA_TEXT_MODE_WIDTH = 80;
+    const size_t VGA_TEXT_MODE_HEIGHT = 25;
+    size_t terminal_row;
+    size_t terminal_column;
+    uint8_t terminal_colour;
+    uint16_t *terminal_buffer;
+    bool isWelcome; // For checking if it is a welcome message, stops printing "$ "  
 
     // Public methods
     //VGA(); // Constructor
