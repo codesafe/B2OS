@@ -102,7 +102,7 @@
     bool setMode(uint32_t width, uint32_t height, uint32_t colourDepth);
     bool supportsMode(uint32_t width, uint32_t height, uint32_t colourDepth);    
     void putPixel(int32_t x, int32_t y, uint8_t r, uint8_t g, uint8_t b);
-    void putPixel(int32_t x, int32_t y, uint8_t colourIndex);
+    void putPixelIndex(int32_t x, int32_t y, uint8_t colourIndex);
     void putLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint8_t r, uint8_t g, uint8_t b);
     void putRect(int32_t x0, int32_t y0, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b);
 

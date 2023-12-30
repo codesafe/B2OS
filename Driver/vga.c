@@ -5,6 +5,7 @@
 
 void VGA_Init()
 {
+/*
 	VGA_AC_INDEX(0x3C0),
 	VGA_AC_WRITE(0x3C0),
 	VGA_AC_READ(0x3C1),
@@ -17,6 +18,7 @@ void VGA_Init()
 	VGA_CRTC_INDEX(0x3D4),
 	VGA_CRTC_DATA(0x3D5),
 	VGA_INSTAT_READ(0x3DA)
+*/	
 }
 
 // Text mode methods
@@ -198,10 +200,11 @@ void writeRegisters(uint8_t* regs)
 
 void putPixel(int32_t x, int32_t y,  uint8_t r, uint8_t g, uint8_t b) 
 {
-	putPixel(x, y, getColorIndex(r, g, b));
+	putPixelIndex(x, y, getColorIndex(r, g, b));
 }
 
-void putPixel(int32_t x, int32_t y, uint8_t colourIndex) {
+void putPixelIndex(int32_t x, int32_t y, uint8_t colourIndex) 
+{
 	// Limit pixel writing to within the screen width
 	if(x < 0 || VGA_GRAPHICS_MODE_WIDTH <= x || y < 0 || VGA_GRAPHICS_MODE_HEIGHT <= y)
         return;
