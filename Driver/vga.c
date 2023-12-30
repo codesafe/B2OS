@@ -3,8 +3,23 @@
 //using namespace morphios::drivers;
 //using namespace morphios::kernel;
 
-void VGA_Init()
+
+// Text mode methods
+size_t terminal_row = 0;
+size_t terminal_column = 0;
+uint8_t terminal_colour = 0;
+uint16_t* terminal_buffer = (uint16_t*) 0xB8000;
+bool isWelcome = false;
+
+uint32_t VGA_GRAPHICS_MODE_WIDTH = 0;
+uint32_t VGA_GRAPHICS_MODE_HEIGHT = 0;
+uint32_t VGA_GRAPHICS_MODE_COLOURDEPTH = 0;
+uint8_t *frameBufferSegment = 0;
+
+
+void vga_init()
 {
+//	isWelcome = true;
 /*
 	VGA_AC_INDEX(0x3C0),
 	VGA_AC_WRITE(0x3C0),
@@ -19,24 +34,20 @@ void VGA_Init()
 	VGA_CRTC_DATA(0x3D5),
 	VGA_INSTAT_READ(0x3DA)
 */	
+ terminal_initialize();
 }
 
-// Text mode methods
-
-size_t terminal_row = 0;
-size_t terminal_column = 0;
-uint8_t terminal_colour = 0;
-uint16_t* terminal_buffer = 0;
-bool isWelcome = true;
 
 void terminal_initialize(void) 
 {
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_colour = vga_entry_colour(VGA_COLOUR_GREEN, VGA_COLOUR_BLACK);
+	terminal_colour = vga_entry_colour(VGA_COLOUR_WHITE, VGA_COLOUR_BLACK);
 	terminal_buffer = (uint16_t*) 0xB8000;
-	for (size_t y = 0; y < VGA_TEXT_MODE_HEIGHT; y++) {
-		for (size_t x = 0; x < VGA_TEXT_MODE_WIDTH; x++) {
+	for (size_t y = 0; y < VGA_TEXT_MODE_HEIGHT; y++) 
+	{
+		for (size_t x = 0; x < VGA_TEXT_MODE_WIDTH; x++) 
+		{
 			const size_t index = y * VGA_TEXT_MODE_WIDTH + x;
 			terminal_buffer[index] = vga_entry(' ', terminal_colour);
 		}
@@ -48,8 +59,9 @@ void terminal_setcolour(uint8_t colour)
 	terminal_colour = colour;
 }
  
-void terminal_putentryat(char c, uint8_t colour, size_t x, size_t y) {
-	const size_t index = y * VGA_TEXT_MODE_WIDTH + x;
+void terminal_putentryat(char c, uint8_t colour, size_t x, size_t y) 
+{
+	size_t index = y * VGA_TEXT_MODE_WIDTH + x;
 	terminal_buffer[index] = vga_entry(c, colour);
 }
 
@@ -68,8 +80,10 @@ void terminal_putchar(char c)
 		}
 	}
 	else if (c == '\0') {}
-	else if (c == '\b') {
-		if (terminal_column > 2) {
+	else if (c == '\b') 
+	{
+		if (terminal_column > 2) 
+		{
 			terminal_column--;
 			terminal_putentryat('\0', terminal_colour, terminal_column, terminal_row);
 		}
@@ -77,9 +91,11 @@ void terminal_putchar(char c)
 			terminal_column = 2;
 		}
 	}
-	else {
+	else 
+	{
 		terminal_putentryat(c, terminal_colour, terminal_column, terminal_row);
-		if (++terminal_column == VGA_TEXT_MODE_WIDTH) {
+		if (++terminal_column == VGA_TEXT_MODE_WIDTH) 
+		{
 			terminal_column = 0;
 			if (++terminal_row == VGA_TEXT_MODE_HEIGHT)
 				terminal_initialize();
@@ -103,6 +119,16 @@ void print_welcome_msg()
 	kprintf("                    /_/                           \n");
 	kprintf("\nWake up, Neo\n");
 	kprintf("The Matrix has you\nFollow the white rabbit\n...\nKnock, Knock, Neo.\n");	
+}
+
+uint8_t vga_entry_colour(uint8_t fg, uint8_t bg) 
+{
+	return fg | bg << 4;
+}
+
+uint16_t vga_entry(unsigned char uc, uint8_t colour) 
+{
+	return (uint16_t) uc | (uint16_t) colour << 8;
 }
 
 // Graphics mode methods
@@ -152,7 +178,6 @@ bool supportsMode(uint32_t width, uint32_t height, uint32_t colourDepth)
 
 void writeRegisters(uint8_t* regs) 
 {
-#if 0
 	// Write Misc registers
 	VGA_MISC_WRITE.write(*(regs++));
 
@@ -194,7 +219,6 @@ void writeRegisters(uint8_t* regs)
 	// Lock 16-colour palette and unblank display
 	VGA_INSTAT_READ.read();
 	VGA_AC_INDEX.write(0x20);
-#endif    
 }
 
 

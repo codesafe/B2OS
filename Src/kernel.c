@@ -1,16 +1,33 @@
+//#include "../Driver/vga.h"
+//#include "screen.h"
+#include "console.h"
+#include "vga.h"
 
-#include "../Driver/vga.h"
+void print_logo() 
+{
+	kprint("########   #######           #######   ######\n",0,1);
+	kprint("##     ## ##     ##         ##     ## ##    ##\n",0,2);
+	kprint("##     ##        ##         ##     ## ##\n",0,3);
+	kprint("########   #######  ####### ##     ##  ######\n",0,4);
+	kprint("##     ## ##                ##     ##       ##\n",0,5);
+	kprint("##     ## ##                ##     ## ##    ##\n", 0, 6);
+	kprint("########  #########          #######   ######\n", 0, 7);
+}
 
 void init()
 {
-
+    kinit_console();
+    print_logo();
 }
 
-void main()
+void main(void)
 {
     init();
 
-    *(char*)0xb8000 = 'Q';
-    *(char*)0xb8002 = 'A';
+    //*(char*)0xb8000 = 'Q';
+    //*(char*)0xb8002 = 'A';
+
+    setMode(320, 240, 256);
+
     return;
 }

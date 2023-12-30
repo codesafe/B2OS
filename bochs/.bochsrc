@@ -1,4 +1,4 @@
-floppya: 1_44=os-image, status=inserted
+floppya: 1_44=B2OS.bin, status=inserted
 log: ./bochs/bochsout.txt
 debugger_log: ./bochs/debugger.out
 boot: floppy

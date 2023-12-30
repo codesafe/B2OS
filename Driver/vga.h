@@ -29,49 +29,37 @@
     kernel::Port8Bit VGA_INSTAT_READ;
 */
     // Graphics mode resolution settings
-    uint32_t VGA_GRAPHICS_MODE_WIDTH;
-    uint32_t VGA_GRAPHICS_MODE_HEIGHT;
-    uint32_t VGA_GRAPHICS_MODE_COLOURDEPTH;
-    uint8_t *frameBufferSegment;
+    extern uint32_t VGA_GRAPHICS_MODE_WIDTH;
+    extern uint32_t VGA_GRAPHICS_MODE_HEIGHT;
+    extern uint32_t VGA_GRAPHICS_MODE_COLOURDEPTH;
+    extern uint8_t *frameBufferSegment;
 
-    /* VGA colour constants. */
-    // TODO: increase this to all 256 colours
-    enum vga_colour {
-        VGA_COLOUR_BLACK = 0,
-        VGA_COLOUR_BLUE = 1,
-        VGA_COLOUR_GREEN = 2,
-        VGA_COLOUR_CYAN = 3,
-        VGA_COLOUR_RED = 4,
-        VGA_COLOUR_MAGENTA = 5,
-        VGA_COLOUR_BROWN = 6,
-        VGA_COLOUR_LIGHT_GREY = 7,
-        VGA_COLOUR_DARK_GREY = 8,
-        VGA_COLOUR_LIGHT_BLUE = 9,
-        VGA_COLOUR_LIGHT_GREEN = 10,
-        VGA_COLOUR_LIGHT_CYAN = 11,
-        VGA_COLOUR_LIGHT_RED = 12,
-        VGA_COLOUR_LIGHT_MAGENTA = 13,
-        VGA_COLOUR_LIGHT_BROWN = 14,
-        VGA_COLOUR_WHITE = 15,
-    };
+    #define VGA_COLOUR_BLACK 0
+    #define VGA_COLOUR_BLUE  1
+    #define VGA_COLOUR_GREEN  2
+    #define VGA_COLOUR_CYAN  3
+    #define VGA_COLOUR_RED  4
+    #define VGA_COLOUR_MAGENTA 5
+    #define VGA_COLOUR_BROWN  6
+    #define VGA_COLOUR_LIGHT_GREY  7
+    #define VGA_COLOUR_DARK_GREY  8
+    #define VGA_COLOUR_LIGHT_BLUE  9
+    #define VGA_COLOUR_LIGHT_GREEN  10
+    #define VGA_COLOUR_LIGHT_CYAN  11
+    #define VGA_COLOUR_LIGHT_RED  12
+    #define VGA_COLOUR_LIGHT_MAGENTA  13
+    #define VGA_COLOUR_LIGHT_BROWN  14
+    #define VGA_COLOUR_WHITE 15
 
-    void VGA_Init();
-
+    void vga_init(void);
     // Graphics mode methods
     void writeRegisters(uint8_t* registers);
     uint8_t* getFrameBufferSegment();
     uint8_t getColorIndex(uint8_t r, uint8_t g, uint8_t b);
 
     // Text mode methods
-    uint8_t vga_entry_colour(enum vga_colour fg, enum vga_colour bg) 
-    {
-        return fg | bg << 4;
-    }
-    
-    uint16_t vga_entry(unsigned char uc, uint8_t colour) 
-    {
-        return (uint16_t) uc | (uint16_t) colour << 8;
-    }
+    uint8_t vga_entry_colour(uint8_t fg, uint8_t bg);
+    uint16_t vga_entry(unsigned char uc, uint8_t colour);
 
     void terminal_setcolour(uint8_t colour);
     void terminal_putentryat(char c, uint8_t colour, size_t x, size_t y);
@@ -79,17 +67,13 @@
 
     // Text mode variables
     // Defined as static as they are global in scope
-    const size_t VGA_TEXT_MODE_WIDTH = 80;
-    const size_t VGA_TEXT_MODE_HEIGHT = 25;
-    size_t terminal_row;
-    size_t terminal_column;
-    uint8_t terminal_colour;
-    uint16_t *terminal_buffer;
-    bool isWelcome; // For checking if it is a welcome message, stops printing "$ "  
-
-    // Public methods
-    //VGA(); // Constructor
-    //~VGA(); // Destructor
+    #define VGA_TEXT_MODE_WIDTH  80
+    #define VGA_TEXT_MODE_HEIGHT 25
+    extern size_t terminal_row;
+    extern size_t terminal_column;
+    extern uint8_t terminal_colour;
+    extern uint16_t *terminal_buffer;
+    extern bool isWelcome; // For checking if it is a welcome message, stops printing "$ "  
 
     // Text mode methods
     void terminal_initialize(void);
@@ -107,4 +91,4 @@
     void putRect(int32_t x0, int32_t y0, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b);
 
 
-#endif // VGA_H
+#endif
