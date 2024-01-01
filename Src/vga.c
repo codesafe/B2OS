@@ -1,10 +1,10 @@
 
-//#include "../Driver/types.h"
 #include "vga.h"
+#include "low_level.h"
 
 unsigned char *frameBufferSegment = 0;
 
-bool setMode(uint32_t width, uint32_t height, uint32_t colourDepth)
+bool setMode(int width, int height, int colourDepth)
 {
 	//VGA_GRAPHICS_MODE_WIDTH = width;
 	//VGA_GRAPHICS_MODE_HEIGHT = height;
@@ -32,93 +32,92 @@ bool setMode(uint32_t width, uint32_t height, uint32_t colourDepth)
 	};
 
 	writeRegisters(_320x200x256);
-	frameBufferSegment = getFrameBufferSegment();
-
+	//frameBufferSegment = getFrameBufferSegment();
 	return true;
 }
 
 
 // VGA framebuffer is at A000:0000, B000:0000, or B800:0000
 // depending on bits in GC 6
-uint8_t* getFrameBufferSegment() 
+unsigned char* getFrameBufferSegment() 
 {
 	//VGA_GC_INDEX.write(0x06);
-    port_8_out( VGA_GC_INDEX, 0x06);
+    port_byte_out( VGA_GC_INDEX, 0x06);
 
 	//uint8_t segment = VGA_GC_DATA.read() & (3<<2);
-    uint8_t segment = port_8_in(VGA_GC_DATA) & (3<<2);
+    unsigned char segment = port_byte_in(VGA_GC_DATA) & (3<<2);
 	switch(segment) 
     {
         default:
-        case 0<<2: return (uint8_t*)0x00000;
-        case 1<<2: return (uint8_t*)0xA0000;
-        case 2<<2: return (uint8_t*)0xB0000;
-        case 3<<2: return (uint8_t*)0xB8000;
+        case 0<<2: return (unsigned char*)0x00000;
+        case 1<<2: return (unsigned char*)0xA0000;
+        case 2<<2: return (unsigned char*)0xB0000;
+        case 3<<2: return (unsigned char*)0xB8000;
     }
 }
 
-void writeRegisters(uint8_t* regs) 
+void writeRegisters(unsigned char* regs) 
 {
 	// Write Misc registers
-    port_8_out( VGA_MISC_WRITE, *(regs++) );
+    port_byte_out( VGA_MISC_WRITE, *(regs++) );
 	//VGA_MISC_WRITE.write(*(regs++));
 
 	// Write Sequencer registers
-	for (uint8_t i = 0; i < VGA_NUM_SEQ_REGS; i++) 
+	for (unsigned char i = 0; i < VGA_NUM_SEQ_REGS; i++) 
     {
 		//VGA_SEQ_INDEX.write(i);
-        port_8_out( VGA_SEQ_INDEX, i );
+        port_byte_out( VGA_SEQ_INDEX, i );
 
 		//VGA_SEQ_DATA.write(*(regs++));
-        port_8_out( VGA_SEQ_DATA, *(regs++));
+        port_byte_out( VGA_SEQ_DATA, *(regs++));
 	}
 
 	// Unlock CRTC registers
 	//VGA_CRTC_INDEX.write(0x03);
-    port_8_out( VGA_CRTC_INDEX, 0x03);
+    port_byte_out( VGA_CRTC_INDEX, 0x03);
     //VGA_CRTC_DATA.write(VGA_CRTC_DATA.read() | 0x80);
-    port_8_out( VGA_CRTC_DATA, port_8_in(VGA_CRTC_DATA) | 0x80);
+    port_byte_out( VGA_CRTC_DATA, port_byte_in(VGA_CRTC_DATA) | 0x80);
 	//VGA_CRTC_INDEX.write(0x11);
-    port_8_out( VGA_CRTC_INDEX, 0x11);
+    port_byte_out( VGA_CRTC_INDEX, 0x11);
 	//VGA_CRTC_DATA.write(VGA_CRTC_DATA.read() & ~0x80);
-    port_8_out( VGA_CRTC_DATA, port_8_in(VGA_CRTC_DATA) & ~0x80);
+    port_byte_out( VGA_CRTC_DATA, port_byte_in(VGA_CRTC_DATA) & ~0x80);
 
 	// Make sure they remain unlocked
 	regs[0x03] |= 0x80;
 	regs[0x11] &= ~0x80;
 
 	// Write CRTC registers
-	for(uint8_t i = 0; i < VGA_NUM_CRTC_REGS; i++) 
+	for(unsigned char i = 0; i < VGA_NUM_CRTC_REGS; i++) 
     {
 		//VGA_CRTC_INDEX.write(i);
-        port_8_out( VGA_CRTC_INDEX, i);
+        port_byte_out( VGA_CRTC_INDEX, i);
 		//VGA_CRTC_DATA.write(*(regs++));
-        port_8_out( VGA_CRTC_DATA, *(regs++));
+        port_byte_out( VGA_CRTC_DATA, *(regs++));
 	}
 
 	// Write Graphics Controller registers
-	for(uint8_t i = 0; i < VGA_NUM_GC_REGS; i++) 
+	for(unsigned char i = 0; i < VGA_NUM_GC_REGS; i++) 
     {
 		//VGA_GC_INDEX.write(i);
-        port_8_out( VGA_GC_INDEX, i);
+        port_byte_out( VGA_GC_INDEX, i);
 		//VGA_GC_DATA.write(*(regs++));
-        port_8_out( VGA_GC_DATA, *(regs++));
+        port_byte_out( VGA_GC_DATA, *(regs++));
 	}
 
 	// Write Attribute Controller registers
-	for(uint8_t i = 0; i < VGA_NUM_AC_REGS; i++) 
+	for(unsigned char i = 0; i < VGA_NUM_AC_REGS; i++) 
     {
 		//VGA_INSTAT_READ.read();
-        port_8_in( VGA_INSTAT_READ );
+        port_byte_in( VGA_INSTAT_READ );
 		//VGA_AC_INDEX.write(i);
-        port_8_out( VGA_AC_INDEX, i);
+        port_byte_out( VGA_AC_INDEX, i);
 		//VGA_AC_WRITE.write(*(regs++));
-        port_8_out( VGA_AC_WRITE, *(regs++));
+        port_byte_out( VGA_AC_WRITE, *(regs++));
 	}
 
 	// Lock 16-colour palette and unblank display
 	//VGA_INSTAT_READ.read();
-    port_8_in( VGA_INSTAT_READ );
+    port_byte_in( VGA_INSTAT_READ );
 	//VGA_AC_INDEX.write(0x20);
-    port_8_out( VGA_AC_INDEX, 0x20);
+    port_byte_out( VGA_AC_INDEX, 0x20);
 }

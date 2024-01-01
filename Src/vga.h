@@ -1,7 +1,7 @@
 #ifndef VGA_H
 #define VGA_H
 
-#include "../Driver/types.h"
+#include "predef.h"
 
 // Number of registers
 #define	VGA_NUM_SEQ_REGS	5
@@ -29,8 +29,8 @@
 
 extern unsigned char *frameBufferSegment;
 
-bool setMode(uint32_t width, uint32_t height, uint32_t colourDepth);
-void writeRegisters(uint8_t* regs);
-uint8_t* getFrameBufferSegment();;
+bool setMode(int width, int height, int colourDepth);
+void writeRegisters(unsigned char* regs);
+unsigned char* getFrameBufferSegment();;
 
 #endif

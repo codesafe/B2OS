@@ -23,7 +23,7 @@
 #define MAX_Y 25
 #define MAX_X 80
 
-extern unsigned char *consolemem;
+//extern unsigned char *consolemem;
 
 void kinit_console();
 void kputc(char c, int x, int y);

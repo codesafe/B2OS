@@ -1,15 +1,16 @@
 #include "console.h"
 
-unsigned char *consolemem = 0;
+//unsigned char *consolemem = 0;
 
 void kinit_console()
 {
-  consolemem = (unsigned char *) VIDEO_ADDRESS;
+ // consolemem = (unsigned char *) VIDEO_ADDRESS;
 }
 
 void kputc(char c, int x, int y)
 {
-  if( *consolemem == 0 ) return;
+  //if( *consolemem == 0 ) return;
+  unsigned char *consolemem = (unsigned char *) VIDEO_ADDRESS;
   
   int offset = kget_offset(x, y);
   consolemem[offset] = c;

@@ -1,7 +1,7 @@
 //#include "../Driver/vga.h"
 //#include "screen.h"
 #include "console.h"
-#include "vga.h"
+//#include "vga.h"
 
 void print_logo() 
 {
@@ -24,10 +24,9 @@ void main(void)
 {
     init();
 
-    //*(char*)0xb8000 = 'Q';
-    //*(char*)0xb8002 = 'A';
+    //setMode(320, 200, 256);
 
-    setMode(320, 240, 256);
+	while(1) {};
 
-    return;
+    //return;
 }
