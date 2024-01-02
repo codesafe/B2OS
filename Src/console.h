@@ -26,6 +26,7 @@
 //extern unsigned char *consolemem;
 
 void kinit_console();
+void kclear_console();
 void kputc(char c, int x, int y);
 void kprint(char *str, int x, int y);
 int kget_offset(int row, int col);

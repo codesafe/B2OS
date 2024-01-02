@@ -3,11 +3,13 @@
 #include "low_level.h"
 
 unsigned char *frameBufferSegment = 0;
+int screenX = 0;
+int screenY = 0;
 
-bool setMode(int width, int height, int colourDepth)
+bool setVgaMode(int width, int height, int colourDepth)
 {
-	//VGA_GRAPHICS_MODE_WIDTH = width;
-	//VGA_GRAPHICS_MODE_HEIGHT = height;
+	screenX = width;
+	screenY = height;
 	//VGA_GRAPHICS_MODE_COLOURDEPTH = colourDepth;
 	
 	// register sets
@@ -32,7 +34,7 @@ bool setMode(int width, int height, int colourDepth)
 	};
 
 	writeRegisters(_320x200x256);
-	//frameBufferSegment = getFrameBufferSegment();
+	frameBufferSegment = getFrameBufferSegment();
 	return true;
 }
 
@@ -120,4 +122,23 @@ void writeRegisters(unsigned char* regs)
     port_byte_in( VGA_INSTAT_READ );
 	//VGA_AC_INDEX.write(0x20);
     port_byte_out( VGA_AC_INDEX, 0x20);
+}
+
+void clearVga()
+{
+	for(int y=0; y<screenY; y++)
+		for(int x=0; x<screenX; x++)
+		{
+			drawPixel(x, y, 2);
+		}
+}
+
+void drawPixel(int x, int y, unsigned char colourIndex) 
+{
+	// Limit pixel writing to within the screen width
+	if(x < 0 || screenX <= x || y < 0 || screenY <= y)
+        return;
+
+	unsigned char *pixelAddr = frameBufferSegment + screenX*y + x;
+	*pixelAddr = colourIndex;
 }

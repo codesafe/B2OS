@@ -1,7 +1,7 @@
 //#include "../Driver/vga.h"
 //#include "screen.h"
 #include "console.h"
-//#include "vga.h"
+#include "vga.h"
 
 void print_logo() 
 {
@@ -17,16 +17,16 @@ void print_logo()
 void init()
 {
     kinit_console();
+	kclear_console();
     print_logo();
 }
 
-void main(void)
+void kmain(void)
 {
     init();
 
-    //setMode(320, 200, 256);
+    setVgaMode(320, 200, 256);
+	clearVga();
 
 	while(1) {};
-
-    //return;
 }

@@ -1,15 +1,33 @@
-nasm boot.asm -f bin -o os.bin
-qemu-system-x86_64 -drive format=raw,file=os.bin
-pause
+::nasm boot.asm -f bin -o os.bin
+::qemu-system-x86_64 -drive format=raw,file=os.bin
+
+cls
+::rm -fr *.bin
+del Out\*.o
+del Out\*.bin
+del *.bin
 
 
-nasm "boot.asm" -f bin -o "Binaries/boot.bin"
-nasm "kernel_entry.asm" -f elf -o "Binaries/kernel_entry.o"
-i386-elf-gcc -ffreestanding -m32 -g -c "kernel.cpp" -o "Binaries/kernel.o"
-nasm "zeroes.asm" -f bin -o "Binaries/zeroes.bin"
+:: Compile assembly code
+nasm "Asm/boot.asm" -f bin -o "Out/boot.bin"
+nasm "Asm/zeroes.asm" -f bin -o "Out/zeroes.bin"
+:: Compile C entry code
+nasm "Asm/kernel_entry.asm" -f elf -o "Out/kernel_entry.o"
 
-i386-elf-ld -o "Binaries/full_kernel.bin" -Ttext 0x1000 "Binaries/kernel_entry.o" "Binaries/kernel.o" --oformat binary
+:: Compile C Kernel
+i386-elf-gcc -ffreestanding -m32 -g -c "Src/console.c" -o "Out/console.o"
+i386-elf-gcc -ffreestanding -m32 -g -c "Src/low_level.c" -o "Out/low_level.o"
+i386-elf-gcc -ffreestanding -m32 -g -c "Src/vga.c" -o "Out/vga.o"
+i386-elf-gcc -ffreestanding -m32 -g -c "Src/kernel.c" -o "Out/kernel.o"
 
-cat "Binaries/boot.bin" "Binaries/full_kernel.bin" "Binaries/zeroes.bin"  > "Binaries/OS.bin"
+:: Link
+i386-elf-ld -o "Out/full_kernel.bin" -Ttext 0x1000 "Out/kernel_entry.o" "Out/kernel.o" "Out/console.o" "Out/low_level.o" "Out/vga.o" --oformat binary
 
-qemu-system-x86_64 -drive format=raw,file="Binaries/OS.bin",index=0,if=floppy,  -m 128M
+::
+::cat "Out/boot.bin" "Out/full_kernel.bin" "Out/zeroes.bin"  > "B2OS.bin"
+copy Out\boot.bin + Out\full_kernel.bin + Out\zeroes.bin /b B2OS.bin
+
+::qemu-system-x86_64 -drive format=raw,file="Binaries/OS.bin",index=0,if=floppy,  -m 128M
+::qemu-virgil -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
+qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
+

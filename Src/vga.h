@@ -3,6 +3,7 @@
 
 #include "predef.h"
 
+
 // Number of registers
 #define	VGA_NUM_SEQ_REGS	5
 #define	VGA_NUM_CRTC_REGS	25
@@ -28,9 +29,13 @@
 #define VGA_INSTAT_READ 0x3DA
 
 extern unsigned char *frameBufferSegment;
+extern int screenX;
+extern int screenY;
 
-bool setMode(int width, int height, int colourDepth);
+bool setVgaMode(int width, int height, int colourDepth);
+void clearVga();
 void writeRegisters(unsigned char* regs);
 unsigned char* getFrameBufferSegment();;
+void drawPixel(int x, int y, unsigned char colourIndex);
 
 #endif

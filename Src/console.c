@@ -4,7 +4,14 @@
 
 void kinit_console()
 {
- // consolemem = (unsigned char *) VIDEO_ADDRESS;
+  //consolemem = (unsigned char *) VIDEO_ADDRESS;
+}
+
+void kclear_console()
+{
+  for(int x=0; x<MAX_X; x++)
+    for(int y=0; y<MAX_Y; y++)
+      kputc(' ', x, y);
 }
 
 void kputc(char c, int x, int y)
