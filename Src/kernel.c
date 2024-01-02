@@ -1,7 +1,8 @@
-//#include "../Driver/vga.h"
-//#include "screen.h"
+
 #include "console.h"
 #include "vga.h"
+#include "timer.h"
+#include "isr.h"
 
 void print_logo() 
 {
@@ -16,6 +17,8 @@ void print_logo()
 
 void init()
 {
+	kisr_install();
+	kinitTimer(1193);
     kinit_console();
 	kclear_console();
     print_logo();
@@ -25,8 +28,14 @@ void kmain(void)
 {
     init();
 
+	ksleep(1000);
     setVgaMode(320, 200, 256);
-	clearVga();
 
-	while(1) {};
+	unsigned char color = 0;
+	while(1) 
+	{
+		clearVga(color++);
+		ksleep(100);
+		color = color >= 64 ? 0 : color;
+	};
 }

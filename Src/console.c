@@ -1,4 +1,5 @@
 #include "console.h"
+#include "util.h"
 
 //unsigned char *consolemem = 0;
 
@@ -30,7 +31,7 @@ void kprint(char *str, int x, int y)
     while(1)
     {
       char c = str[len];
-      if( c == '\n')
+      if( c == '\n' || c == '\0')
         break;
        kputc(c, x+len, y);
        len ++;
@@ -42,4 +43,17 @@ int kget_offset(int x, int y)
   return 2 * (y * MAX_X + x);
 }
 
+int kint2ascii(unsigned long n, char str[]) 
+{
+    char temp[64] = {0,};
+    int i = 0;
+    do 
+    {
+        temp[i++] = n % 10 + '0';
+    } while ((n /= 10) > 0);
 
+    temp[i] = '\n';
+
+    reverse(temp, str, i);
+    return i;
+}

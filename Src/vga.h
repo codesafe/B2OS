@@ -28,12 +28,16 @@
 
 #define VGA_INSTAT_READ 0x3DA
 
+// Port 0x3C8, 0x3C9 and 0x3C7 control the DAC.
+#define VGA_DAC_CONTROL     0x03C8
+#define VGA_DAC_PALETTE     0x03C9
+
 extern unsigned char *frameBufferSegment;
 extern int screenX;
 extern int screenY;
 
 bool setVgaMode(int width, int height, int colourDepth);
-void clearVga();
+void clearVga(unsigned char color);
 void writeRegisters(unsigned char* regs);
 unsigned char* getFrameBufferSegment();;
 void drawPixel(int x, int y, unsigned char colourIndex);

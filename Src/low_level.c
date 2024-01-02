@@ -1,17 +1,20 @@
 #include "low_level.h"
 
-unsigned char port_8_in(unsigned short port)
+#if 1
+
+unsigned char port_byte_in(unsigned short port)
 {
     unsigned char ret;
     asm volatile ( "inb %1, %0" : "=a"(ret) : "Nd"(port) );
     return ret;
 }
 
-void port_8_out(unsigned short port, unsigned char data)
+void port_byte_out(unsigned short port, unsigned char data)
 {
      asm volatile("outb %0, %1" : : "a"(data), "Nd"(port) );
 }
 
+#else
 ///////////////////////////////////////
 
 unsigned char port_byte_in(unsigned short port)
@@ -31,6 +34,8 @@ void port_byte_out(unsigned short port, unsigned char data)
   // Notice the semicolons mean output and input
   __asm__("out %%al, %%dx" : : "a" (data), "d" (port));
 }
+
+#endif
 
 unsigned short port_word_in(unsigned short port)
 {
