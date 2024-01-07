@@ -1,7 +1,7 @@
 #ifndef ISR_H
 #define ISR_H
 
-#include "predef.h"
+#include "kerneldef.h"
 // Interrupt Service Routine
 /* ISRs reserved for CPU exceptions */
 
@@ -55,8 +55,8 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
-void kisr_install();
-void isr_handler(registers_t r);
+void k_init_isr();
+void k_isr_handler(registers_t r);
 
 typedef void (*isr_t)(registers_t);
 void register_interrupt_handler(unsigned char n, isr_t handler);

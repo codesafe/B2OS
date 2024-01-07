@@ -1,1 +1,1 @@
-times 25600 db 0
+times 512*32 db 0

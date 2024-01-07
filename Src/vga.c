@@ -52,7 +52,7 @@ void set_mode_x_palette()
     REP_OUTSB (VGA_DAC_PALETTE, palette_RGB, 64 * 3);
 }
 
-bool setVgaMode(int width, int height, int colourDepth)
+bool k_setVgaMode(int width, int height, int colourDepth)
 {
 	screenX = width;
 	screenY = height;
@@ -102,8 +102,8 @@ bool setVgaMode(int width, int height, int colourDepth)
 	};
 
 
-	//writeRegisters(_320x200x256);
-	writeRegisters(_320x200x256_modex);
+	writeRegisters(_320x200x256);
+	//writeRegisters(_320x200x256_modex);
 	set_mode_x_palette();
 
 	frameBufferSegment = getFrameBufferSegment();
@@ -117,7 +117,7 @@ unsigned char* getFrameBufferSegment()
 {
     port_byte_out( VGA_GC_INDEX, 0x06);
 
-#if true
+#if false
 	//uint8_t segment = VGA_GC_DATA.read() & (3<<2);
     unsigned char segment = port_byte_in(VGA_GC_DATA) & (3<<2);
 	switch(segment) 
@@ -218,21 +218,19 @@ void writeRegisters(unsigned char* regs)
 	port_byte_out( VGA_AC_INDEX, 0xFF);
 }
 
-void clearVga(unsigned char color)
+void k_clearVga(unsigned char color)
 {
 	for(int y=0; y<screenY; y++)
 		for(int x=0; x<screenX; x++)
 		{
-			drawPixel(x, y, color);
+			k_drawPixel(x, y, color);
 		}
 }
 
-void drawPixel(int x, int y, unsigned char colourIndex) 
+void k_drawPixel(int x, int y, unsigned char colourIndex) 
 {
-	// Limit pixel writing to within the screen width
 	if(x < 0 || screenX <= x || y < 0 || screenY <= y)
         return;
-
-	unsigned char *pixelAddr = frameBufferSegment + screenX*y + x;
+	unsigned char *pixelAddr = frameBufferSegment + (screenX*y + x);
 	*pixelAddr = colourIndex;
 }

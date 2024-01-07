@@ -1,7 +1,8 @@
-﻿#ifndef PREDEF_H
-#define PREDEF_H
+﻿#ifndef A2_PREDEF_H
+#define A2_PREDEF_H
 
-
+#include <stddef.h>
+#include <stdbool.h>
 /*
 	MOS 6502 CPU Emulator
 */

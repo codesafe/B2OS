@@ -1,13 +1,13 @@
 #include "idt.h"
 #include "isr.h"
 #include "low_level.h"
+#include "console.h"
 
 isr_t interrupt_handlers[256];
 
-
 /* Can't do this with a loop because we need the address
  * of the function names */
-void kisr_install() 
+void k_init_isr() 
 {
     set_idt_gate(0, (unsigned int)isr0);
     set_idt_gate(1, (unsigned int)isr1);
@@ -76,6 +76,8 @@ void kisr_install()
 
     // Set Interrupt Flag 인터럽트 시작
 	asm volatile("sti");
+
+    k_print("[INIT ISR]\n");
 }
 
 /* To print the message which defines every exception */
@@ -118,7 +120,7 @@ char *exception_messages[] =
     "Reserved"
 };
 
-void isr_handler(registers_t r) 
+void k_isr_handler(registers_t r) 
 {
 /*
     kprint("received interrupt: ");
@@ -136,7 +138,7 @@ void register_interrupt_handler(unsigned char n, isr_t handler)
     interrupt_handlers[n] = handler;
 }
 
-void irq_handler(registers_t r) 
+void k_irq_handler(registers_t r) 
 {
     /* After every interrupt we need to send an EOI to the PICs
      * or they will not send another interrupt again */

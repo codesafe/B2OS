@@ -2,7 +2,7 @@
 #define IDT_H
 
 //#include "types.h"
-#include "predef.h"
+#include "kerneldef.h"
 
 /* Segment selectors */
 #define KERNEL_CS 0x08

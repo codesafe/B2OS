@@ -1,11 +1,13 @@
-#ifndef PREDEF_H
-#define PREDEF_H
+#ifndef KERNELDEF_H
+#define KERNELDEF_H
 
-#include <stdint.h>
+//#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 
-typedef char bool;
-#define true 1
-#define false 0
+//typedef char bool;
+//#define true 1
+//#define false 0
 
 #define IRQ0 32
 #define IRQ1 33
@@ -24,7 +26,6 @@ typedef char bool;
 #define IRQ14 46
 #define IRQ15 47
 
-/* Struct which aggregates many registers */
 typedef struct 
 {
    unsigned int ds; /* Data segment selector */
@@ -34,8 +35,9 @@ typedef struct
 } registers_t;
 
 
-#define low_16(address) (uint16_t)((address) & 0xFFFF)
-#define high_16(address) (uint16_t)(((address) >> 16) & 0xFFFF)
+#define low_16(address) (unsigned short)((address) & 0xFFFF)
+#define high_16(address) (unsigned short)(((address) >> 16) & 0xFFFF)
 
+#define MAX_MEM_SIZE    1024*1024 // ( 1MB )
 
 #endif

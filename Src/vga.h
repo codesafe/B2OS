@@ -1,7 +1,7 @@
 #ifndef VGA_H
 #define VGA_H
 
-#include "predef.h"
+#include "kerneldef.h"
 
 
 // Number of registers
@@ -36,10 +36,11 @@ extern unsigned char *frameBufferSegment;
 extern int screenX;
 extern int screenY;
 
-bool setVgaMode(int width, int height, int colourDepth);
-void clearVga(unsigned char color);
+bool k_setVgaMode(int width, int height, int colourDepth);
+void k_clearVga(unsigned char color);
+void k_drawPixel(int x, int y, unsigned char colourIndex);
+
 void writeRegisters(unsigned char* regs);
 unsigned char* getFrameBufferSegment();;
-void drawPixel(int x, int y, unsigned char colourIndex);
 
 #endif

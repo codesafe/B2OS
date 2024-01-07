@@ -4,7 +4,7 @@
 extern unsigned long global_tick;
 extern unsigned long global_seconds;
 
-void kinitTimer(unsigned int freq);
-void ksleep(int ticks);
+void k_init_timer(unsigned int freq);
+void k_sleep(int ticks);
 
 #endif

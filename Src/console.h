@@ -20,16 +20,15 @@
 #define CONSOLE_WHITE    15
 
 #define VIDEO_ADDRESS 0xb8000
-#define MAX_Y 25
 #define MAX_X 80
+#define MAX_Y 25
 
-//extern unsigned char *consolemem;
-
-void kinit_console();
-void kclear_console();
-void kputc(char c, int x, int y);
-void kprint(char *str, int x, int y);
-int kget_offset(int row, int col);
-int kint2ascii(unsigned long n, char str[]);
+void k_init_console();
+void k_clear_console();
+void k_putc(char c, int x, int y);
+void k_print(char *str);
+void k_prinxy(char *str, int x, int y);
+int k_get_offset(int row, int col);
+int k_num2ascii(unsigned long n, char str[]);
 
 #endif

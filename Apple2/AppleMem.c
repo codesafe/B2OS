@@ -4,18 +4,21 @@
 */
 
 #include "AppleMem.h"
+#include "AppleDevice.h"
+#include "../Src/memory.h"
 
-/*
-Memory::Memory()
-{
-	memory = NULL;
-	device = NULL;
-}
+bool LCWritable = true;
+bool LCReadable = false;
+bool LCBank2Enable = true;
+bool LCPreWriteFlipflop = false;
 
-Memory::~Memory()
-{
-}
-*/
+BYTE ram[RAMSIZE];  // 48K of ram in $000-$BFFF
+BYTE rom[ROMSIZE];  // 12K of rom in $D000-$FFFF
+BYTE lgc[LGCSIZE];  // Language Card 12K in $D000-$FFFF
+BYTE bk2[BK2SIZE];  // bank 2 of Language Card 4K in $D000-$DFFF
+BYTE sl6[SL6SIZE];  // P5A disk ][ PROM in slot 6
+
+BYTE* memory;
 
 void mem_Create()
 {
@@ -23,7 +26,7 @@ void mem_Create()
 	memory = new BYTE[MEMORY_SIZE];
 	memset(memory, 0, MEMORY_SIZE);
 #else
-	Reset();
+	mem_Reset();
 #endif
 }
 
@@ -75,7 +78,7 @@ BYTE mem_ReadByte(int address)
 		return sl6[address - SL6START];  // disk][
 
 	if ((address & 0xF000) == 0xC000)
-		return (device->SoftSwitch(this, address, 0, false));
+		return (ad_SoftSwitch(address, 0, false));
 
 	return 0;
 #endif
@@ -105,7 +108,7 @@ void mem_WriteByte(int address, BYTE value)
 
 	if ((address & 0xF000) == 0xC000)
 	{
-		device->SoftSwitch(this, address, value, true);
+		ad_SoftSwitch(address, value, true);
 		return;
 	}
 #endif
@@ -113,16 +116,16 @@ void mem_WriteByte(int address, BYTE value)
 
 WORD mem_ReadWord(int addr)
 {
-	BYTE m0 = ReadByte(addr);
-	BYTE m1 = ReadByte(addr + 1);
+	BYTE m0 = mem_ReadByte(addr);
+	BYTE m1 = mem_ReadByte(addr + 1);
 	WORD w = (m1 << 8) | m0;
 	return w;
 }
 
 void mem_WriteWord(WORD value, int addr)
 {
-	WriteByte(addr, value >> 8);
-	WriteByte(addr + 1, value & 0xFF);
+	mem_WriteByte(addr, value >> 8);
+	mem_WriteByte(addr + 1, value & 0xFF);
 }
 
 
@@ -138,7 +141,7 @@ WORD mem_UpLoadProgram(BYTE* code, int codesize)
 	return addr;
 }
 
-void mem_UpLoadProgram(int startPos, BYTE* code, int codesize)
+void mem_UpLoadProgram_Pos(int startPos, BYTE* code, int codesize)
 {
 	for (int i = 0; i < codesize; i++)
 		memory[startPos+i] = code[i];
@@ -155,34 +158,3 @@ void mem_ResetRam()
 	memset(ram, 0, sizeof(ram));
 }
 
-/*
-
-void Memory::Dump(FILE* fp)
-{
-	fwrite(&LCWritable, 1, sizeof(bool), fp);
-	fwrite(&LCReadable, 1, sizeof(bool), fp);
-	fwrite(&LCBank2Enable, 1, sizeof(bool), fp);
-	fwrite(&LCPreWriteFlipflop, 1, sizeof(bool), fp);
-
-	fwrite(ram, 1, RAMSIZE, fp);
-	fwrite(rom, 1, ROMSIZE, fp);
-	fwrite(lgc, 1, LGCSIZE, fp);
-	fwrite(bk2, 1, BK2SIZE, fp);
-	fwrite(sl6, 1, SL6SIZE, fp);
-}
-
-void Memory::LoadDump(FILE* fp)
-{
-	fread(&LCWritable, 1, sizeof(bool), fp);
-	fread(&LCReadable, 1, sizeof(bool), fp);
-	fread(&LCBank2Enable, 1, sizeof(bool), fp);
-	fread(&LCPreWriteFlipflop, 1, sizeof(bool), fp);
-
-	fread(ram, 1, RAMSIZE, fp);
-	fread(rom, 1, ROMSIZE, fp);
-	fread(lgc, 1, LGCSIZE, fp);
-	fread(bk2, 1, BK2SIZE, fp);
-	fread(sl6, 1, SL6SIZE, fp);
-}
-
-*/

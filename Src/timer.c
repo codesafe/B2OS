@@ -1,5 +1,6 @@
 //#define TIMER_LOG
-#include "predef.h"
+
+#include "kerneldef.h"
 #include "timer.h"
 #include "low_level.h"
 #include "console.h"
@@ -28,7 +29,7 @@ static void timer_callback(registers_t regs)
 	}
 }
 
-void kinitTimer(unsigned int freq)
+void k_init_timer(unsigned int freq)
 {
     // Timer는 IRQ0 이용 
     // timer_callback IRQ0에 설치
@@ -57,9 +58,10 @@ void kinitTimer(unsigned int freq)
 	port_byte_out(0x40, divisor & 0xFF);   /* Set low byte of divisor */
 	port_byte_out(0x40, divisor >> 8);	 /* Set high byte of divisor */
 
+    //k_print("[INIT TIMER]\n");
 }
 
-void ksleep(int waitticks)
+void k_sleep(int waitticks)
 {
     int startTicks = global_tick;
     while(global_tick < startTicks + waitticks){}
