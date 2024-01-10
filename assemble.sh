@@ -5,7 +5,8 @@ rm -fr  Out/*.o Out/*.bin
 export PATH=$PATH:/usr/local/i386elfgcc/bin
 # Compile assembly code
 # bin -> bin
-nasm "Asm/boot.asm" -f bin -o "Out/boot.bin"
+nasm "Asm/boot_first.asm" -f bin -o "Out/boot_first.bin"
+nasm "Asm/boot_second.asm" -f bin -o "Out/boot_second.bin"
 
 # Compile C entry code
 # o -> elf format
@@ -35,7 +36,7 @@ i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleCpu.c" -o "Out/AppleCpu.o"
 
 # Link
 i386-elf-ld -o "Out/full_kernel.bin" \
-    -Ttext 0x1000 \
+    -Ttext 0x8200 \
     Out/kernel_entry.o \
     Out/interrupt.o \
     Out/kernel.o \
@@ -58,9 +59,9 @@ i386-elf-ld -o "Out/full_kernel.bin" \
 #i386-elf-ld -o "Out/full_kernel.bin" -Ttext 0x1000 "Out/kernel_entry.o" "Out/kernel.o" "Out/console.o" "Out/low_level.o" --oformat binary
 
 #cat "Out/boot.bin" "Out/full_kernel.bin" "Out/zeroes.bin"  > "B2OS.bin"
-cat Out/boot.bin Out/full_kernel.bin > "B2OS.bin"
+cat Out/boot_first.bin Out/boot_second.bin > Out/boot.bin
+cat Out/boot.bin Out/full_kernel.bin > B2OS.bin
 
 #qemu-system-x86_64 -drive format=raw,file="Binaries/OS.bin",index=0,if=floppy,  -m 128M
 #qemu-virgil -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
-#qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
-
+qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M

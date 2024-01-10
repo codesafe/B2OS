@@ -70,6 +70,6 @@ void runDemo()
 void kmain(void)
 {
     init_kernel();
-	//runDemo();
+	runDemo();
 	while(1){};
 }

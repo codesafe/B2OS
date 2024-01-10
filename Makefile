@@ -1,46 +1,63 @@
-C_SOURCES = $(wildcard Src/*.c drivers/*.c cpu/*.c libc/*.c)
-HEADERS = $(wildcard Src/*.h drivers/*.h cpu/*.h libc/*.h)
-# Nice syntax for file extension replacement
-OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o} 
+## Compiler
+CC=/usr/local/i386elfgcc/bin/i386-elf-gcc
 
-# Change this if your cross-compiler is somewhere else
-CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
-GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
-# -g: Use debugging symbols in gcc
-CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
+OBJCP=/usr/local/i386elfgcc/bin/i386-elf-objcopy
+## Linker
+LD=/usr/local/i386elfgcc/bin/i386-elf-ld
 
-# First rule is run by default
-B2OS.bin: Out/bootsect.bin kernel.bin
-	cat $^ > B2OS.bin
+SRC=$(shell pwd)
+## Directory to write binaries to
+BIN=./Out
+## Compiler Flags
+FLAGS=-ffreestanding -m32 -g 
 
-# '--oformat binary' deletes all symbols as a collateral, so we don't need
-# to 'strip' them manually on this case
-kernel.bin: Out/kernel_entry.o ${OBJ}
-	i386-elf-ld -o $@ -Ttext 0x1000 $^ --oformat binary
+## C source files
+CSRC := $(shell find ./ -name "*.c")
+## C target files
+CTAR := $(patsubst %.c,%.o,$(CSRC))
 
-# Used for debugging purposes
-kernel.elf: Out/kernel_entry.o ${OBJ}
-	i386-elf-ld -o $@ -Ttext 0x1000 $^ 
+## Assembly source files that must be compiled to ELF
+ASMSRC := ./CPU/GDT/gdt_loader.asm ./Bootloader/gdt.asm ./Kernel/kernel_entry.asm
+## Assembly target files
+ASMTAR := $(patsubst %.asm,%.o,$(ASMSRC))
 
-run: B2OS.bin
-	qemu-system-i386 -fda B2OS.bin
+## Files which must be linked first, if things break just bodge it together
+LDPRIORITY := $(BIN)/Kernel/kernel_entry.o $(BIN)/Kernel/kernel.o $(BIN)/Drivers/Keyboard.o $(BIN)/CPU/Interrupts/irq.o $(BIN)/Drivers/VGA_Text.o
 
-# Open the connection to qemu and load our kernel-object file with symbols
-#debug: B2OS.bin kernel.elf
-#	qemu-system-i386 -s -fda B2OS.bin -d guest_errors,int &
-#	${GDB} -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
+all: prebuild build
 
-# Generic rules for wildcards
-# To make an object, always compile from its .c
-%.o: %.c ${HEADERS}
-	${CC} ${CFLAGS} -c $< -o $@
+debug: prebuild build
+	$(OBJCP) --only-keep-debug $(BIN)/kernel.elf $(BIN)/kernel.sym
 
-%.o: %.asm
-	nasm $< -f elf -o $@
+	qemu-system-x86_64 -drive format=raw,file=osimage_formated.bin,index=0,if=floppy -hda disk.img -m 128M -s -S &
 
-%.bin: %.asm
-	nasm $< -f bin -o $@
+prebuild:	## Prebuild instructions
+	clear
+	rm -rf $(BIN)
+	mkdir $(BIN)
 
-clean:
-	rm -rf *.bin *.dis *.o B2OS.bin *.elf
-	rm -rf Out/*.o Out/*.bin
+build: boot $(ASMTAR) $(CTAR)
+	$(LD) -o $(BIN)/kernel.elf -Ttext 0x8200 $(LDPRIORITY) --start-group $(filter-out $(LDPRIORITY),$(shell find ./ -name "*.o" | xargs)) --end-group --oformat elf32-i386 ## Pray this works
+	$(OBJCP) -O binary $(BIN)/kernel.elf $(BIN)/kernel.bin
+	cat $(BIN)/boot.bin $(BIN)/stage_2.bin > $(BIN)/both_boot.bin
+	cat $(BIN)/both_boot.bin $(BIN)/kernel.bin > $(BIN)/short.bin
+	cat $(BIN)/short.bin $(BIN)/empty_end.bin > os_image.bin
+	dd if=/dev/zero of=osimage_formated.bin bs=512 count=2880 >/dev/null
+	dd if=os_image.bin of=osimage_formated.bin conv=notrunc >/dev/null
+
+boot:
+	nasm Bootloader/boot.asm -f bin -o $(BIN)/boot.bin -i Bootloader
+	nasm Bootloader/stage_2.asm -f bin -o $(BIN)/stage_2.bin -i Bootloader
+	nasm Kernel/empty_end.asm -f bin -o $(BIN)/empty_end.bin
+
+%.o: %.c
+	mkdir -p $(BIN)/$(shell dirname $<)
+	$(CC) $(FLAGS) -c $< -o $(BIN)/$(subst .c,.o,$<) $(addprefix -I ,$(shell dirname $(shell echo $(CSRC) | tr ' ' '\n' | sort -u | xargs)))
+
+%.o : %.asm
+	mkdir -p $(BIN)/$(shell dirname $<)
+	nasm $< -f elf -o $(BIN)/$(subst .asm,.o,$<) $(addprefix -i ,$(shell dirname $(shell echo $(CSRC) | tr ' ' '\n' | sort -u | xargs)))
+
+run: prebuild build
+## qemu-system-x86_64 -drive format=raw,file=os_image.bin,index=0,if=floppy,  -m 128M
+	qemu-system-x86_64 -d cpu_reset -drive format=raw,file=osimage_formated.bin,index=0,if=floppy -hda test_disk.img -m 128M
