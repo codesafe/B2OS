@@ -58,10 +58,18 @@ i386-elf-ld -o "Out/full_kernel.bin" \
 
 #i386-elf-ld -o "Out/full_kernel.bin" -Ttext 0x1000 "Out/kernel_entry.o" "Out/kernel.o" "Out/console.o" "Out/low_level.o" --oformat binary
 
-#cat "Out/boot.bin" "Out/full_kernel.bin" "Out/zeroes.bin"  > "B2OS.bin"
-cat Out/boot_first.bin Out/boot_second.bin > Out/boot.bin
-cat Out/boot.bin Out/full_kernel.bin > B2OS.bin
 
-#qemu-system-x86_64 -drive format=raw,file="Binaries/OS.bin",index=0,if=floppy,  -m 128M
+#cat Out/boot_first.bin Out/boot_second.bin > Out/boot.bin
+#cat Out/boot.bin Out/full_kernel.bin > B2OS.bin
+
+#cat Out/boot_first.bin Out/boot_second.bin > B2OS.bin
+cat Out/boot_first.bin > B2OS.bin
+
+
+
 #qemu-virgil -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
-qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
+#qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
+
+# int13 extended mode는 hdd만됨
+#qemu-system-x86_64 -m 1024 -machine type=pc -drive format=raw,file=B2OS.bin
+qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=ide, -m 128M

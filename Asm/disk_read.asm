@@ -97,6 +97,28 @@ print_string:
 	.end:
 		ret
 
+; Input: ax : logical sector
+; Output: cl - sector / ch - track / dh - head
+LBAtoCHS:
+	push bx
+	push ax
+	mov bx, ax			; Save logical sector
+	mov dx, 0			; First the sector
+	div word [SectorsPerTrack]
+	add dl, 01h			; Physical sectors start at 1
+	mov cl, dl			; Sectors belong in CL for int 13h
+	mov ax, bx
+	mov dx, 0			; Now calculate the head
+	div word [SectorsPerTrack]
+	mov dx, 0
+	div word [Heads]
+	mov dh, dl			; Head/side
+	mov ch, al			; Track
+	pop ax
+	pop bx
+	mov dl, byte [BOOT_DISK]		; Set correct device
+	ret
+
 BOOT_DISK:
 	db 0x00
 
@@ -108,3 +130,6 @@ DISK_PARAM_ERROR:
 
 DISK_SUCC:
 	db "disk_read_ok", 0x0A, 0x0D, 0x00
+
+SectorsPerTrack		dw 18		; 24th and 25th byte total= 2 bytes
+Heads				dw 2		; 26th and 27th byte total= 2 bytes
