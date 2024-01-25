@@ -76,7 +76,7 @@ Main:
     mov [INT13Scratchpad], dl
 
     ; Save non data sectors count to memory
-    call GetNonDataSectorsCount    ; ret cx = 0x0021
+    call GetNonDataSectorsCount    ; ret cx = 0x0021 ( 33 )
     mov [NonDataSectors], cl
     
    
@@ -87,9 +87,10 @@ Main:
     ;floppy_loop:
         ; Load FAT12 non data sectors
         ; Number of sectors to read
-        mov al, [NonDataSectors]
+        mov al, [NonDataSectors] ; 33 섹터로드
 
         ; We don't want load first sector with bootloader again
+        ; 첫 섹터는 뺀다 고로 32섹터
         dec al
 
         ; Sector number
@@ -101,6 +102,7 @@ Main:
 
         ; Offset
         mov bx, 0x7E00
+        ; 0x00007e00에 32섹터 로드 시작
 
         call LoadFloppyData
 
