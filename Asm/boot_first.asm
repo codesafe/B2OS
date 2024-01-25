@@ -83,6 +83,14 @@ FileSystemType		db 'FAT12   '       ; 8 chars
 ; 끝
 ;----------------------------------------------------------------------------------------
 
+KERNELFILENAME		db 'KERNEL  BIN'    ; 11 chars
+
+; TODO
+; 1. FAT 정보를 0x7e00로 Load ( 33 Sector )
+; 2. 로드된 FAT 정보에서 Kernel.bin 파일을 찾는다 (메모리에서는 .은 없다 )
+; 3. 찾은 Kernel 로드
+; 4. Kernel로 Jump (jmp 0x0000:0xF000)
+
 
 
 ; 62 ~ 510
