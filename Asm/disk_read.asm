@@ -96,7 +96,7 @@ _head       	db 0x00
 _sector     	db 0x00
 
 
-%include "print16.asm"
+%include "./Asm/print16.asm"
 
 %ifdef READ_PROGRESS
 read_progress		db '.', 0

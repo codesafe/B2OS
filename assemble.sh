@@ -6,13 +6,12 @@ export PATH=$PATH:/usr/local/i386elfgcc/bin
 # Compile assembly code
 # bin -> bin
 nasm "Asm/boot_first.asm" -f bin -o "Out/boot_first.bin"
-nasm "Asm/boot_second.asm" -f bin -o "Out/boot_second.bin"
+#nasm "Asm/boot_second.asm" -f bin -o "Out/boot_second.bin"
 
 # Compile C entry code
 # o -> elf format
 nasm "Asm/interrupt.asm" -f elf -o "Out/interrupt.o"
 nasm "Asm/kernel_entry.asm" -f elf -o "Out/kernel_entry.o"
-nasm "Asm/zeroes.asm" -f bin -o "Out/zeroes.bin"
 
 
 # Compile C Kernel
