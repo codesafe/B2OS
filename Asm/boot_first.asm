@@ -138,9 +138,14 @@ boot_first:
 
 	call reset_disk
 
+	pusha
+	mov si, load_fat_str
+	call print_str
+	popa
+
 	; Load FAT12 non data sectors
-	mov al, 32 ; 33 섹터로드 - 1 boot
-	mov cl, 1
+	mov cl, 32 ; 33 섹터로드 - 1 boot
+	mov al, 1
 	xor bx, bx
 	mov es, bx
 	mov bx, FAT12_LOCATION	; 0x07e00에 32섹터 로드 시작
@@ -176,6 +181,9 @@ boot_first:
 
 FAT12_LOCATION		equ	0x7e00
 KERNEL_LOCATION		equ 0xF000
+
+load_fat_str		db 'LOAD FAT', 0x0a, 0x0d, 0
+load_kernel_str		db 'LOAD KERNEL', 0x0a, 0x0d, 0
 
 times 510-($-$$) db 0	; Boot loader를 512에 맞춤 (마지막 aa55를 빼고 코드부분이외 나머지를 0으로 총510바이트 + aa55 = 512)
 dw 0xaa55

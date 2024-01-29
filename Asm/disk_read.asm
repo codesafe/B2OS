@@ -29,6 +29,7 @@ lbatochs:
 ;===============================================================
 
 ; lba : ax
+; cx : read count
 read_disk:
 	mov di,0x5			; 오류시 재시도 횟수
 
@@ -39,7 +40,9 @@ read_loop:
 	push cx
 
 	call lbatochs
-	mov ax,0x0201				; ah = bios function 2, al = read 1 sector
+	;mov ax,0x0201				; ah = bios function 2, al = read 1 sector
+	mov ah, 0x02
+	mov al, 0x01
 	mov ch,byte [_cylinder]
 	mov cl,byte [_sector]
 	mov dh,byte [_head]
@@ -78,6 +81,8 @@ read_ok:
 
 read_done:
 	jc read_error
+	mov si,disk_read_ok
+	call print_str
 	ret
 
 
@@ -102,7 +107,8 @@ _sector     	db 0x00
 read_progress		db '.', 0
 %endif
 
-disk_read_error		db 'DISK ERR',0
+disk_read_ok		db 'READ OK', 0x0a, 0x0d, 0
+disk_read_error		db 'READ ERR',0x0a, 0x0d, 0
 
 
 ; read_disk:
