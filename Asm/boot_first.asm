@@ -7,7 +7,7 @@
 ; |------------|---------|------------|------------|----------------|---------|------------|------------|---------|---------|------------|------------|------------|------------|
 ; {                                        Segment 1                                                       }{                            Segment 2 - n                          }
 
-
+%define READ_PROGRESS
 
 [BITS 16]
 [org 0x7c00]
@@ -143,10 +143,11 @@ boot_first:
 	mov cl, 1
 	xor bx, bx
 	mov es, bx
-	mov bx, MEM_FAT12	; 0x07e00에 32섹터 로드 시작
+	mov bx, FAT12_LOCATION	; 0x07e00에 32섹터 로드 시작
 
 	call read_disk
 
+	jmp $
 
 	; todo. find kernel.bin file on FAT12
 
@@ -173,8 +174,8 @@ boot_first:
 
 %include "Asm/disk_read.asm"
 
-MEM_FAT12	equ	0x7e00
-MEM_KERNEL	equ 0xF000
+FAT12_LOCATION		equ	0x7e00
+KERNEL_LOCATION		equ 0xF000
 
 times 510-($-$$) db 0	; Boot loader를 512에 맞춤 (마지막 aa55를 빼고 코드부분이외 나머지를 0으로 총510바이트 + aa55 = 512)
 dw 0xaa55

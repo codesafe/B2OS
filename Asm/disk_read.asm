@@ -7,7 +7,7 @@ reset_disk:
     ret
 
 ;===============================================================
-
+; http://www.osdever.net/tutorials/view/lba-to-chs
 ; ax : lba
 ; div : ax : 몫(Quotient), dx : 나머지(Remainder)
 lbatochs:
@@ -18,12 +18,11 @@ lbatochs:
 	mov byte [_sector],dl			; 섹터
 
 	xor dx,dx
-	; head = (lba/SectorsPerTrack) % NumHeads
+	; head = (lba / SectorsPerTrack) % NumHeads => (나머지)
 	div word [Head]
 	mov byte [_head],dl
 
-	; we already have the sector value from the above calculation: track = (lba / (SECTORS_PER_TRACK * 2))
-	; Cylinder(track) = (LBA/SectorsPerTrack)/NumHeads
+	; Cylinder(track) = (lba / SectorsPerTrack)/NumHeads => (몫)
 	mov byte [_cylinder],al
 	ret
 
@@ -62,8 +61,8 @@ read_loop:
 
 read_ok:
 
-%ifdef PRINT_LOADING_PROGRESS
- 	mov si,loadProgressString
+%ifdef READ_PROGRESS
+ 	mov si,read_progress
  	call print_str
 %endif
 
@@ -78,7 +77,15 @@ read_ok:
 	clc
 
 read_done:
+	jc read_error
 	ret
+
+
+read_error:
+	mov si,disk_read_error
+	call print_str
+	cli
+	jmp $
 	
 
 ;----------------------------------------
@@ -91,10 +98,11 @@ _sector     	db 0x00
 
 %include "print16.asm"
 
-%ifdef PRINT_LOADING_PROGRESS
-loadProgressString db '.',0
+%ifdef READ_PROGRESS
+read_progress		db '.', 0
 %endif
 
+disk_read_error		db 'DISK ERR',0
 
 
 ; read_disk:
