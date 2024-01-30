@@ -7,6 +7,7 @@ reset_disk:
     ret
 
 ;===============================================================
+
 ; http://www.osdever.net/tutorials/view/lba-to-chs
 ; ax : lba
 ; div : ax : 몫(Quotient), dx : 나머지(Remainder)
@@ -25,6 +26,19 @@ lbatochs:
 	; Cylinder(track) = (lba / SectorsPerTrack)/NumHeads => (몫)
 	mov byte [_cylinder],al
 	ret
+
+;===============================================================
+
+; @fn clusterToLBA: Convert a cluster value to a linear block address
+clustertolba:
+
+	sub ax,0x02								; make the cluster zero-based
+	xor cx,cx								; clear cx for operations
+	mov cl,byte [SectorsPerCluster]	        ; store the sectors per cluster in cl =>  0x01
+	mul cx									; multiply the cluster number by the sectors per cluster
+	add ax,word [_firstDataSector]			; and add the starting sector offset
+	ret
+
 
 ;===============================================================
 
@@ -92,13 +106,161 @@ read_error:
 	cli
 	jmp $
 	
+;===============================================================
 
-;----------------------------------------
+; @fn _fetchRootDirectory: this function is used to read the FAT12 root directory
+; ES:BX -> data buffer for root directory sector
+_fetchRootDirectory:
+	; compute the size of the root directory and store in cx
+	xor cx,cx
+	xor dx,dx
+	mov ax,32                       ;_ROOT_ENTRY_SIZE = 33 - 1
+	mul word [RootDirectoryEntry]
+	div word [BytesPerSector]
+	xchg ax,cx
+
+	; compute the location of the root directory
+	mov al,byte [FileAllocationTable]
+	mul word [SectorsPerFAT]
+	add ax,word [ReservedSectorCount]
+
+	; store the end of the root directory
+	mov word [_firstDataSector],ax
+	add word [_firstDataSector],cx
+
+	call _readSectors
+	ret
+
+;===============================================================
+
+; @fn _parseRootDirectory: this function will parse the root directory for the
+; file by the name indicated in DS:SI. The filename must be in MS-DOS 8.3 format
+; DS:SI -> file name pointer
+; ES:DI -> root directory structure
+; CX -> root directory size
+
+_parseRootDirectory:
+
+	mov cx,word [RootDirectoryEntry]
+
+.parseLoop:
+
+	; save important registers
+	push si
+	push di
+	push cx
+
+	; search for the filename
+	mov cx,11           ; _FILENAME_LEN = 11
+	rep cmpsb
+
+	; restore the registers before the next attempt
+	pop cx
+	pop di
+	pop si
+
+	je .found		; filename was found!
+
+	; check the next entry while there are entries left
+	add di,32       ; _ROOT_ENTRY_SIZE = 33 -1
+	loop .parseLoop
+
+	; no more entries; go to error condition return
+	stc
+	jmp .done
+
+.found:
+	clc								; the file was found, clear the error status
+	mov dx,word [di+0x1a]			; this is our starting sector
+	mov word [_currentCluster],dx	; store the starting sector
+
+.done:
+	ret
+
+;===============================================================
+
+; @fn _readStage2Image: Read the second stage into memory
+; This function expects the following conditions:
+; ES:BX => destination buffer for the FAT
+; _currentCluster => starting cluster number of the file
+_readStage2Image:
+
+	; compute the size of the FAT
+; %ifdef _LOAD_BOTH_FAT_COPIES
+; 	xor ax,ax
+; 	mov al,byte [FileAllocationTable]
+; 	mul word [SectorsPerFAT]    ; 9 sector
+; 	xchg cx,ax
+; %else
+	mov cx,word [SectorsPerFAT]
+;%endif
+
+	; compute the location of the FAT (just above the reserved sectors)
+	mov ax,word [ReservedSectorCount]
+
+	; read the FAT into memory at ES:BX
+	mov word [_fatBuffer],bx
+	call _readSectors
+
+	; set up ES and BX to receive the image file
+	mov ax,_OS_LOAD_SEGMENT
+	mov es,ax
+	mov bx,_OS_LOAD_OFFSET
+	push bx
+
+.readFileLoop:
+	mov ax,word [_currentCluster]
+	pop bx								; restore our buffer
+	call clustertolba
+
+	xor cx,cx
+	mov cl,byte [SectorsPerCluster]
+	call _readSectors
+	jc .done
+	push bx
+
+	; this is the part where we find the next cluster!
+	mov ax,word [_currentCluster]
+	mov cx,ax
+	mov dx,ax
+	shr dx,0x0001
+	add cx,dx
+	mov bx,[_fatBuffer]
+	add bx,cx
+	mov dx,word [bx]
+	test ax,0x0001
+	jz .evenCluster
+
+.oddCluster:
+
+	shr dx,0x04
+	jmp .clusterDone
+
+.evenCluster:
+
+	and dx,0x0fff
+
+.clusterDone:
+
+	mov word [_currentCluster],dx
+	cmp dx,0xff8
+	jb .readFileLoop
+	clc
+
+.done:
+
+	ret
+
+;===============================================================
+
 ; data section for floppy operations
-;----------------------------------------
 _cylinder   	db 0x00
 _head       	db 0x00
 _sector     	db 0x00
+
+_fatBuffer			dw 0x00
+_firstDataSector	dw 0x00
+_currentCluster 	dw 0x00
 
 
 %include "./Asm/print16.asm"
@@ -110,116 +272,3 @@ read_progress		db '.', 0
 disk_read_ok		db 'READ OK', 0x0a, 0x0d, 0
 disk_read_error		db 'READ ERR',0x0a, 0x0d, 0
 
-
-; read_disk:
-
-; 	mov ah, 0x02    ; read
-; 	mov dl, [BOOT_DISK]
-; 	; [es:bx] 0x1000:0x0000 => 0x10000 물리주소에 로딩
-; 	int 0x13
-
-; 	jc read_error
-
-; 	cmp ah, 0
-; 	jne read_error
-
-; 	xor ah, ah
-; 	mov bx, ax
-; 	call print_dec
-
-; 	mov bx, DISK_SUCC
-; 	call print_string
-; 	ret
-
-; read_error:
-; 	mov bx, DISK_ERROR
-; 	jmp disk_error
-
-; disk_param_error:
-; 	mov bx, DISK_PARAM_ERROR
-; 	jmp disk_error
-
-
-; disk_error:
-; 	push ax
-; 	call print_string
-; 	pop ax
-; 	mov bh, ah
-; 	call print_dec
-; 	jmp $
-
-; ; 10진수 출력 10000단위 ~ 1단위
-; print_dec:
-; 	mov dx, 0x00
-; 	mov ax, bx
-; 	mov bx, 10000
-; 	div bx
-
-; 	mov ah, 0x00
-; 	call print_digit
-; 	mov bx, dx
-	
-; 	mov dx, 0x00
-; 	mov ax, bx
-; 	mov bx, 1000
-; 	div bx
-	
-; 	mov ah, 0x00
-; 	call print_digit
-; 	mov bx, dx
-	
-; 	mov dx, 0x00
-; 	mov ax, bx
-; 	mov bx, 100
-; 	div bx
-
-; 	mov ah, 0x00
-; 	call print_digit
-; 	mov bx, dx
-
-; 	mov dx, 0x00
-; 	mov ax, bx
-; 	mov bx, 10
-; 	div bx
-; 	mov ah, 0x00
-; 	call print_digit
-	
-; 	mov ax, dx
-; 	mov ah, 0x00
-; 	call print_digit
-; 	ret
-	
-; print_digit:
-; 	mov ah, 0x0E
-; 	add al, 48
-; 	int 0x10
-; 	ret
-
-; print_string:
-; 	mov ah, 0x0E
-; 	.loop:
-; 		mov al, [bx]
-; 		cmp al, 0x00
-; 		je .end
-; 		int 0x10
-; 		inc bx
-; 		jmp .loop
-; 	.end:
-; 		ret
-
-
-
-; ;BOOT_DISK:
-; ;	db 0x00
-
-; DISK_ERROR:
-; 	db "disk_read_error", 0x0A, 0x0D, 0x00
-
-; DISK_PARAM_ERROR:
-; 	db "disk_param_err", 0x0A, 0x0D, 0x00
-
-; DISK_SUCC:
-; 	db "disk_read_ok", 0x0A, 0x0D, 0x00
-
-; SectorsPerTrack		dw 18		; 24th and 25th byte total= 2 bytes
-; Heads				dw 2		; 26th and 27th byte total= 2 bytes
