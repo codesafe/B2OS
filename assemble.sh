@@ -1,4 +1,5 @@
 clear
+rm -fr *.img
 rm -fr *.bin
 rm -fr  Out/*.o Out/*.bin
 
