@@ -1,6 +1,9 @@
 
 [BITS 16]
 
+%define _OS_LOAD_SEGMENT 0x0050
+%define _OS_LOAD_OFFSET 0x0000
+
 reset_disk:
     xor ax,ax
     int 0x13
@@ -108,9 +111,9 @@ read_error:
 	
 ;===============================================================
 
-; @fn _fetchRootDirectory: this function is used to read the FAT12 root directory
+; fetchRootDirectory: this function is used to read the FAT12 root directory
 ; ES:BX -> data buffer for root directory sector
-_fetchRootDirectory:
+fetchRootDirectory:
 	; compute the size of the root directory and store in cx
 	xor cx,cx
 	xor dx,dx
@@ -128,22 +131,22 @@ _fetchRootDirectory:
 	mov word [_firstDataSector],ax
 	add word [_firstDataSector],cx
 
-	call _readSectors
+	call read_disk
 	ret
 
 ;===============================================================
 
-; @fn _parseRootDirectory: this function will parse the root directory for the
+; parseRootDirectory: this function will parse the root directory for the
 ; file by the name indicated in DS:SI. The filename must be in MS-DOS 8.3 format
 ; DS:SI -> file name pointer
 ; ES:DI -> root directory structure
 ; CX -> root directory size
 
-_parseRootDirectory:
+parseRootDirectory:
 
 	mov cx,word [RootDirectoryEntry]
 
-.parseLoop:
+parseLoop:
 
 	; save important registers
 	push si
@@ -159,22 +162,22 @@ _parseRootDirectory:
 	pop di
 	pop si
 
-	je .found		; filename was found!
+	je parsefound		; filename was found!
 
 	; check the next entry while there are entries left
 	add di,32       ; _ROOT_ENTRY_SIZE = 33 -1
-	loop .parseLoop
+	loop parseLoop
 
 	; no more entries; go to error condition return
 	stc
-	jmp .done
+	jmp parsedone
 
-.found:
+parsefound:
 	clc								; the file was found, clear the error status
 	mov dx,word [di+0x1a]			; this is our starting sector
 	mov word [_currentCluster],dx	; store the starting sector
 
-.done:
+parsedone:
 	ret
 
 ;===============================================================
@@ -200,7 +203,7 @@ _readStage2Image:
 
 	; read the FAT into memory at ES:BX
 	mov word [_fatBuffer],bx
-	call _readSectors
+	call read_disk
 
 	; set up ES and BX to receive the image file
 	mov ax,_OS_LOAD_SEGMENT
@@ -208,15 +211,15 @@ _readStage2Image:
 	mov bx,_OS_LOAD_OFFSET
 	push bx
 
-.readFileLoop:
+readFileLoop:
 	mov ax,word [_currentCluster]
 	pop bx								; restore our buffer
 	call clustertolba
 
 	xor cx,cx
 	mov cl,byte [SectorsPerCluster]
-	call _readSectors
-	jc .done
+	call read_disk
+	jc _readStage2Imagedone
 	push bx
 
 	; this is the part where we find the next cluster!
@@ -229,26 +232,25 @@ _readStage2Image:
 	add bx,cx
 	mov dx,word [bx]
 	test ax,0x0001
-	jz .evenCluster
+	jz evenCluster
 
-.oddCluster:
+oddCluster:
 
 	shr dx,0x04
-	jmp .clusterDone
+	jmp clusterDone
 
-.evenCluster:
+evenCluster:
 
 	and dx,0x0fff
 
-.clusterDone:
+clusterDone:
 
 	mov word [_currentCluster],dx
 	cmp dx,0xff8
-	jb .readFileLoop
+	jb readFileLoop
 	clc
 
-.done:
-
+_readStage2Imagedone:
 	ret
 
 ;===============================================================

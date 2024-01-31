@@ -152,14 +152,15 @@ boot_first:
 	call read_disk
 
 	; read and parse the root directory. If CF=1 after any of these calls, jump to error
-	call _fetchRootDirectory
-	mov si,_imageFileNameStr
-	mov di,_DISK_BUFFER
-	call _parseRootDirectory
+	call fetchRootDirectory
+
+	mov si,KERNELFILENAME
+	mov di,FAT12_LOCATION
+	call parseRootDirectory
 
 
 	; now load the second stage file. bx must contain the destination buffer for the FAT
-	mov bx,_DISK_BUFFER
+	mov bx,FAT12_LOCATION
 	call _readStage2Image
 
 
