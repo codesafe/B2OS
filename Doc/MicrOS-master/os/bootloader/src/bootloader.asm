@@ -266,7 +266,7 @@ GetNonDataSectorsCount:
     mov dx, 32
     mul dx  ; ax = 0x00E0 * 32 = 0x1C00
     xor dx, dx
-    mov bx, [BytesPerLogicalSector]     ; 0x0200
+    mov bx, [BytesPerLogicalSector]     ; 512
     div bx  ; ax = 0x1C00 / 0x0200 = 0x0E
     add cx, ax 
     ; cx = cx( 0x13 ) + 0x0E =  0x0021
@@ -280,15 +280,15 @@ GetFirstKernelSector:
     mov cx, 0x7E00
 
     ; Add size of both File Allocations Tables to get root directory offset
-    mov al, [FileAllocationTables]
-    mov dx, [LogicalSectorsPerFAT]
+    mov al, [FileAllocationTables]  ; 2
+    mov dx, [LogicalSectorsPerFAT]  ; 9
     mul dx
 
-    mov dx, [BytesPerLogicalSector]
-    mul dx
+    mov dx, [BytesPerLogicalSector] ; 512
+    mul dx  ; ax = 2 * 9 * 512 = 9216 (0x2400)
 
     ; Now cx contains offset of root directory
-    add cx, ax
+    add cx, ax ; 0x7E00 + 0x2400 = 0xA200 ( 41,472 ) => 18 Sector 이후의 메모리 (FAT0,1 건너뜀)
 
     GetFirstKernelSector_BeginCompareLoop:
     ; Load name of entry and expected kernel name offsets

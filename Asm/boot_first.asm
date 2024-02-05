@@ -22,7 +22,7 @@ nop
 OEM_ID				db 'B2OS    '	; 8 byte
 ;----------------------------------------------------------------------------------------
 ; 11 ( 1섹터의 크기(512로 해야 함) )
-BytesPerSector		dw 0x0200		; 2 byte
+BytesPerSector		dw 512		; 2 byte
 ;----------------------------------------------------------------------------------------
 
 
@@ -31,40 +31,40 @@ BytesPerSector		dw 0x0200		; 2 byte
 ; https://wiki.osdev.org/FAT
 ;----------------------------------------------------------------------------------------
 ; 13 (클러스터의 크기(1섹터로 해야 함))
-SectorsPerCluster	db 0x01			; 1 byte
+SectorsPerCluster	db 1			; 1 byte
 ;----------------------------------------------------------------------------------------
 ; 14 ( FAT가 어디에서 시작될까 (보통은 1섹터째부터) )
-ReservedSectorCount	dw 0x0001		; 2 byte
+ReservedSectorCount	dw 1		; 2 byte
 ;----------------------------------------------------------------------------------------
 ; 16 (Storage media의 FAT번호 대부분이 0x02)
-FileAllocationTable	db 0x02			; 1 byte
+FileAllocationTable	db 2			; 1 byte
 ;----------------------------------------------------------------------------------------
 ; 17 ( 루트 디렉토리 영역의 크기(보통은 224엔트리로 한다) )
-RootDirectoryEntry	dw 0x00E0		; 2 byte
+RootDirectoryEntry	dw 224		; 2 byte
 ;----------------------------------------------------------------------------------------
 ; 19 ( FAT12 볼륨에 할당된 전체 섹터의 개수 : 2880 )
-TotalSector			dw 0x0B40		; 2 byte
+TotalSector			dw 2880		; 2 byte
 ;----------------------------------------------------------------------------------------
 ; 21 ( F0 : 1.44MB 플로피 )
 ; https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system#BPB20_OFS_0Ah
 MediaType           db 0xF0			; 1 byte
 ;----------------------------------------------------------------------------------------
 ; 22 ( FAT영역 길이(9섹터로 해야 함) )
-SectorsPerFAT		dw 0x0009		; 2 byte
+SectorsPerFAT		dw 9		; 2 byte
 ;----------------------------------------------------------------------------------------
 ; 24 ( 1트럭에 몇개의 섹터가 있을까(18로 해야 함) )
-SectorsPerTrack		dw 0x0012		; 2 byte
+SectorsPerTrack		dw 18		; 2 byte
 ;----------------------------------------------------------------------------------------
 ; 26 ( 헤드 수(2로 해야 함), Number of heads or sides on the storage media )
-Head				dw 0x0002		; 2 byte
+Head				dw 2		; 2 byte
 ;----------------------------------------------------------------------------------------
 ; 28 ( Hidden Sector, 파티션을 사용하지 않기 때문에 여기는 반드시 0 )
-HiddenSector		dd 0x00000000	; 4 byte
+HiddenSector		dd 0	; 4 byte
 ;----------------------------------------------------------------------------------------
 ; 32
 ; Large sector count. This field is set if there are more than 65535 sectors in the volume, 
 ; resulting in a value which does not fit in the Number of Sectors entry at 0x13.
-TotalHiddenSectors	dd 0x00000000	; 4 byte
+TotalHiddenSectors	dd 0	; 4 byte
 ;----------------------------------------------------------------------------------------
 ; 36
 ; 드라이브 번호다. BIOS Interrupt 0x13 호출 시 반환되는 값과 동일하다. 
@@ -74,10 +74,10 @@ TotalHiddenSectors	dd 0x00000000	; 4 byte
 ; [5] 이 때 DL 레지스터에 0x00을 넣으면 첫번째 플로피 디스크(Drive A:)에 대한 서비스라는 의미고, 
 ; 0x80을 넣으면 첫번재 하드 디스크에 대한 서비스라는 의미다. 즉 INT 13h를 호출할 때 어느 미디어에 
 ; 대한 인터럽트 서비스인지를 나타내는 값이다.
-DriveNumber			db 0x00			; 1 byte
+DriveNumber			db 0			; 1 byte
 ;----------------------------------------------------------------------------------------
 ; 37 ( Reserved / 다른 용도로 사용 )
-BOOT_DISK			db 0x00			; 1 byte
+DriveNo				db 0			; 1 byte
 ;----------------------------------------------------------------------------------------
 ; 38 ( 	Signature (must be 0x28 or 0x29). )
 BootSignature		db 0x29			; 1 byte
@@ -194,6 +194,7 @@ boot_first:
 FAT12_LOCATION		equ	0x7e00
 KERNEL_LOCATION		equ 0xF000
 
+BOOT_DISK	db 0 	; Boot device number
 load_fat_str		db 'LOAD FAT', 0x0a, 0x0d, 0
 load_kernel_str		db 'LOAD KERNEL', 0x0a, 0x0d, 0
 
