@@ -293,14 +293,14 @@ GetFirstKernelSector:
     GetFirstKernelSector_BeginCompareLoop:
     ; Load name of entry and expected kernel name offsets
     mov si, cx
-    mov di, KernelFileName
+    mov di, KernelFileName  ; kernel bin (kernel.bin)
 
     ; Current string index will be stored in dx register
     xor dx, dx
 
     GetFirstKernelSector_CompareLoop:
     ; Check if whole string has been compared
-    cmp dx, 10
+    cmp dx, 10  ; 10글자 비교
     je GetFirstKernelSector_KernelFound
 
     ; Compare chars from both strings
@@ -334,7 +334,7 @@ GetFirstKernelSector:
     jne GetFirstKernelSector_FilenameNotEqual
 
     ; Increment index and char addresses
-    inc dx
+    inc dx ; 증가하면서 비교
     inc si
     inc di
 
@@ -343,7 +343,7 @@ GetFirstKernelSector:
 
     GetFirstKernelSector_FilenameNotEqual:
     ; Go to next entry
-    add cx, 0x20
+    add cx, 0x20    ; 14 sector * 512 / 224개 = 32 byte ( filename 1개당 32 byte )
     jmp GetFirstKernelSector_BeginCompareLoop
 
     GetFirstKernelSector_KernelFound:
@@ -352,7 +352,6 @@ GetFirstKernelSector:
     mov bx, cx
     add bx, 0x1A
     mov ax, [bx]
-
     ret
 
 ; Input:
@@ -417,7 +416,7 @@ LoadKernel:
 
     LoadKernel_LoadNextSector:
     ; Offset (current sector index * 512 bytes)
-    mov ax, [ebp - 4]
+    mov ax, [ebp - 4]   ; push된 bx = 0
     mov dx, 0x200
     mul dx
     mov bx, ax
@@ -435,7 +434,7 @@ LoadKernel:
     mov al, 1
 
     ; Sector number
-    mov cx, [ebp - 2]
+    mov cx, [ebp - 2]   ; push된 ax
     add cx, [NonDataSectors]
     sub cx, 2
 

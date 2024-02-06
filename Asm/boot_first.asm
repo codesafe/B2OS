@@ -133,8 +133,8 @@ boot_first:
     
     mov ax, cs
     mov ds, ax
-
     mov [BOOT_DISK], dl
+	sti
 
 	call reset_disk
 
@@ -143,7 +143,6 @@ boot_first:
 	call print_str
 	popa
 
-	; Load FAT12 non data sectors
 	mov cl, 32 ; 33 섹터로드 - 1 boot
 	mov al, 1
 	xor bx, bx
@@ -151,47 +150,19 @@ boot_first:
 	mov bx, FAT12_LOCATION	; 0x07e00에 32섹터 로드 시작
 	call read_disk
 
-	; read and parse the root directory. If CF=1 after any of these calls, jump to error
-	call fetchRootDirectory
-
-	mov si,KERNELFILENAME
-	mov di,FAT12_LOCATION
-	call parseRootDirectory
-
-
-	; now load the second stage file. bx must contain the destination buffer for the FAT
-	mov bx,FAT12_LOCATION
-	call _readStage2Image
-
-
-	jmp $
-
 	; todo. find kernel.bin file on FAT12
-
+	call search_kernel_file
 	; todo. load kernel.bin to 0x0F000
+	call load_kernel
 
 	; todo. jump to kernel
 
+	jmp $
 
-	; clear screen										
-	; mov ah, 0x0
-	; mov al, 0x3
-	; int 0x10                ; text mode
-
-	; mov bx, BOOT_SECOND ;[es:bx] 메모리 위치에 disk 읽어 로딩
-
-	; mov al, 0x02    ; 읽을 sector 갯수 ; sector 몇개 읽을것인가? ( 작으면 리부팅됨 )
-	; ; floppy의 1sector는 512 byte	
-    ; mov cl, 0x02    ; sector 번호 (boot loader가 첫번째 512byte, 2번째 sector)
-	; mov ch, 0x00    ; cylinder 번호
-	; mov dh, 0x00    ; head 번호
-	; call read_disk
-
-	; jmp BOOT_SECOND
 
 %include "Asm/disk_read.asm"
 
-FAT12_LOCATION		equ	0x7e00
+FAT12_LOCATION		equ	0x7E00
 KERNEL_LOCATION		equ 0xF000
 
 BOOT_DISK	db 0 	; Boot device number

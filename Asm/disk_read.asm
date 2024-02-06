@@ -111,147 +111,123 @@ read_error:
 	
 ;===============================================================
 
-; fetchRootDirectory: this function is used to read the FAT12 root directory
-; ES:BX -> data buffer for root directory sector
-fetchRootDirectory:
-	; compute the size of the root directory and store in cx
-	xor cx,cx
-	xor dx,dx
-	mov ax,32                       ;_ROOT_ENTRY_SIZE = 33 - 1
-	mul word [RootDirectoryEntry]
-	div word [BytesPerSector]
-	xchg ax,cx
+; Load된 FAT의 Directory에서 Kernel.bin 파일 검색
+search_kernel_file :
+    mov cx, [FAT12_LOCATION]	; FAT 시작지점
 
-	; compute the location of the root directory
-	mov al,byte [FileAllocationTable]
-	mul word [SectorsPerFAT]
-	add ax,word [ReservedSectorCount]
+    mov al, [FileAllocationTable]  	; 2
+    mov dx, [SectorsPerFAT]  		; 9
+    mul dx
 
-	; store the end of the root directory
-	mov word [_firstDataSector],ax
-	add word [_firstDataSector],cx
+    mov dx, [BytesPerSector] 		; 512
+    mul dx  ; ax = 2 * 9 * 512 = 9216 (0x2400)
+    add cx, ax ; 0x7E00 + 0x2400 = 0xA200 ( 41,472 ) => 18 Sector 이후의 메모리 (FAT0,1 건너뜀)
 
-	call read_disk
-	ret
+search_loop:
+    mov si, cx
+    mov di, KERNELFILENAME  ; kernel bin (kernel.bin)
 
-;===============================================================
+    xor dx, dx
+compare_loop:
+    cmp dx, 10  ; 11글자 비교 0 ~ 10
+    je kernel_found
 
-; parseRootDirectory: this function will parse the root directory for the
-; file by the name indicated in DS:SI. The filename must be in MS-DOS 8.3 format
-; DS:SI -> file name pointer
-; ES:DI -> root directory structure
-; CX -> root directory size
+    ; Compare chars
+    mov ax, [si]
+    mov bx, [di]
 
-parseRootDirectory:
+    cmp ax, bx
+    jne filenot_match
 
-	mov cx,word [RootDirectoryEntry]
+    inc dx ; 증가하면서 비교
+    inc si
+    inc di
+    jmp compare_loop	; 계속 비교
 
-parseLoop:
+filenot_match:
+    add cx, 0x20    	; 14 sector * 512 / 224개 = 32 byte ( filename 1개당 32 byte )
+    jmp compare_loop	; 못찾았으니 다음 file 검색
 
-	; save important registers
-	push si
-	push di
-	push cx
-
-	; search for the filename
-	mov cx,11           ; _FILENAME_LEN = 11
-	rep cmpsb
-
-	; restore the registers before the next attempt
-	pop cx
-	pop di
-	pop si
-
-	je parsefound		; filename was found!
-
-	; check the next entry while there are entries left
-	add di,32       ; _ROOT_ENTRY_SIZE = 33 -1
-	loop parseLoop
-
-	; no more entries; go to error condition return
-	stc
-	jmp parsedone
-
-parsefound:
-	clc								; the file was found, clear the error status
-	mov dx,word [di+0x1a]			; this is our starting sector
-	mov word [_currentCluster],dx	; store the starting sector
-
-parsedone:
-	ret
+kernel_found:
+    ; Move address with sector number to bx register due to Intel limitations and then move sector number to ax register
+    ; https://stackoverflow.com/questions/1797765/assembly-invalid-effective-address
+    mov bx, cx
+    add bx, 0x1A	; 26 -> Directory 정보에서 First Logical Cluster는 26 Byte부터 있다 (2byte)
+					; https://www.sqlpassion.at/archive/2022/03/03/reading-files-from-a-fat12-partition/
+    mov ax, [bx]
+	; ax - 찾은 kernel file sector number
+    ret
 
 ;===============================================================
 
-; @fn _readStage2Image: Read the second stage into memory
-; This function expects the following conditions:
-; ES:BX => destination buffer for the FAT
-; _currentCluster => starting cluster number of the file
-_readStage2Image:
+; Input:
+;   ax - initial kernel sector
+; Output:
+;   bx - loaded kernel sectors count
+load_kernel:
+    push ebp
+    mov  ebp, esp
 
-	; compute the size of the FAT
-; %ifdef _LOAD_BOTH_FAT_COPIES
-; 	xor ax,ax
-; 	mov al,byte [FileAllocationTable]
-; 	mul word [SectorsPerFAT]    ; 9 sector
-; 	xchg cx,ax
-; %else
-	mov cx,word [SectorsPerFAT]
-;%endif
+    ; Push initial kernel sector
+    push ax
 
-	; compute the location of the FAT (just above the reserved sectors)
-	mov ax,word [ReservedSectorCount]
+    ; Push initial loaded sectors count
+    xor bx, bx
+    push bx
+    
+    ; Initial segment
+    mov bx, 0x0000
+    mov es, bx
 
-	; read the FAT into memory at ES:BX
-	mov word [_fatBuffer],bx
-	call read_disk
+    LoadKernel_LoadNextSector:
+    ; Offset (current sector index * 512 bytes)
+    mov ax, [ebp - 4]   ; push된 bx = 0
+    mov dx, 0x200
+    mul dx
+    mov bx, ax
+    add bx, 0xF000
+    
+    cmp bx, 0
+    jne LoadKernel_Increment
 
-	; set up ES and BX to receive the image file
-	mov ax,_OS_LOAD_SEGMENT
-	mov es,ax
-	mov bx,_OS_LOAD_OFFSET
-	push bx
+    mov ax, es
+    add ax, 0x1000
+    mov es, ax
 
-readFileLoop:
-	mov ax,word [_currentCluster]
-	pop bx								; restore our buffer
-	call clustertolba
+    LoadKernel_Increment:
+    ; Number of sectors to read
+    mov al, 1
 
-	xor cx,cx
-	mov cl,byte [SectorsPerCluster]
-	call read_disk
-	jc _readStage2Imagedone
-	push bx
+    ; Sector number
+    mov cx, [ebp - 2]   ; push된 ax
+    add cx, [NonDataSectors]
+    sub cx, 2
 
-	; this is the part where we find the next cluster!
-	mov ax,word [_currentCluster]
-	mov cx,ax
-	mov dx,ax
-	shr dx,0x0001
-	add cx,dx
-	mov bx,[_fatBuffer]
-	add bx,cx
-	mov dx,word [bx]
-	test ax,0x0001
-	jz evenCluster
+    ; Load kernel sector
+    call LoadFloppyData
 
-oddCluster:
+    ; Increment loaded sectors count
+    mov ax, [ebp - 4]
+    inc ax
+    mov [ebp - 4], ax
 
-	shr dx,0x04
-	jmp clusterDone
+    ; Get next sector number
+    mov ax, [ebp - 2]
+    call GetSectorValue
+    mov [ebp - 2], ax
 
-evenCluster:
+    ; Check if the current sector was the last (end-of-chain marker)
+    cmp ax, 0x0FF0
+    jl LoadKernel_LoadNextSector
 
-	and dx,0x0fff
+    ; Return loaded kernel sectors count in bx
+    mov bx, [ebp - 4]
 
-clusterDone:
+    mov esp, ebp
+    pop ebp
 
-	mov word [_currentCluster],dx
-	cmp dx,0xff8
-	jb readFileLoop
-	clc
+    ret
 
-_readStage2Imagedone:
-	ret
 
 ;===============================================================
 
