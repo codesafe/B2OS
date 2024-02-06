@@ -165,36 +165,36 @@ kernel_found:
 ; Output:
 ;   bx - loaded kernel sectors count
 load_kernel:
-    push ebp
-    mov  ebp, esp
+    push ebp			; bp backup
+    mov  ebp, esp		; sp = bp , stack 초기화
 
     ; Push initial kernel sector
-    push ax
+    push ax				; ax = bp-2
 
     ; Push initial loaded sectors count
     xor bx, bx
-    push bx
+    push bx				; bx = bp-4
     
     ; Initial segment
     mov bx, 0x0000
     mov es, bx
 
-    LoadKernel_LoadNextSector:
+load_next_sector:
     ; Offset (current sector index * 512 bytes)
     mov ax, [ebp - 4]   ; push된 bx = 0
-    mov dx, 0x200
-    mul dx
+    mov dx, 0x200		; 512 
+    mul dx				; [ebp - 4] * 512
     mov bx, ax
-    add bx, 0xF000
+    add bx, [KERNEL_LOCATION]		; 0xF000 + ([ebp - 4] * 512)
     
     cmp bx, 0
     jne LoadKernel_Increment
-
+	; offset의 한계를 넘어가면 segment를 증가해야함 ( 맞나? )
     mov ax, es
     add ax, 0x1000
     mov es, ax
 
-    LoadKernel_Increment:
+LoadKernel_Increment:
     ; Number of sectors to read
     mov al, 1
 
@@ -218,7 +218,7 @@ load_kernel:
 
     ; Check if the current sector was the last (end-of-chain marker)
     cmp ax, 0x0FF0
-    jl LoadKernel_LoadNextSector
+    jl load_next_sector
 
     ; Return loaded kernel sectors count in bx
     mov bx, [ebp - 4]
