@@ -234,39 +234,70 @@ load_kernel_inc:
 get_sector_value:
     ; Multiple sector index by 3/2 to get physical byte address
     mov bx, 3
-    mul bx
+    mul bx		; in (ax값) * 3
 
     mov bx, 2
-    xor dx, dx
-    div bx
+    xor dx, dx		; dx = 0
+    div bx			; (in*3)/2 => ax는 몫 , dx = 나머지
 
     ; Set initial FAT offset
     mov bx, [FAT12_LOCATION]	; 0x7E00
 
     ; Add FAT offset to the calculated byte address
-    add bx, ax
+    add bx, ax		; [FAT12_LOCATION] + (in*3)/2의 몫
 
-    ; If remainder is equal to 0, then index is even, otherwise it's odd
+    ; 나머지가 0이면 짝수, 아니면 홀수
     cmp dx, 0
     je even
-    jne odd
+    ;jne odd
+	jmp odd
 
 even :
     ; Even sector has pattern LL _H __
+	; in이 짝수이면 ->  물리적 위치는 위치 1+(3*n)/2의 하위 4비트입니다. & (3*n)/2 8 bits
     mov ah, [bx + 1]
     mov al, [bx]
-    and ax, 0x0FFF
+    and ax, 0x0FFF	; 0000111111111111b 하위 12비트 취함
     jmp get_sector_value_done
 
 odd :
     ; Odd sector has pattern __ L_ HH
+	; in이 홀수인 경우 항목의 물리적 위치는 위치 (3*n)/2의 상위 4비트 & 1+(3*n)/2의 8 bits 
     dec bx
     mov ah, [bx + 2]
     mov al, [bx + 1]
-    shr ax, 4
+    shr ax, 4		; 상위 12비트 취함
 
 get_sector_value_done:
     ret
+
+; 최적화 버전
+; https://github.com/SQLpassion/osdev/blob/3ac59b14f6215a98343b20fd1f7fc1304538706f/main64/boot/functions.asm
+; Input:
+;   ax - sector index
+; Output:
+;   ax - sector value
+get_sector_value_op:
+    mov	cx, ax
+	mov dx, ax
+	shr dx, 1	; in /2 (2로 나눔)
+	add cx, dx	; (in * 3) / 2 의 간략버전
+	mov bx, [FAT12_LOCATION]	; 0x7E00
+    add bx, cx
+	mov dx, word [bx]			; fat에서 2 바이트 읽음
+	test ax, 1					; 홀수 짝수 검사 (in의 최하위 1비트가 1인가??)
+	jnz odd_cluster
+
+even_cluster:
+    and dx, 0000111111111111b                   ; 하위 12 bits 취함
+    jmp get_sector_value_op_done
+         
+odd_cluster:
+    shr dX, 0x0004                              ; 상위 12 bits 취함
+
+get_sector_value_op_done:
+	mov ax, dx
+	ret
 
 ;===============================================================
 
