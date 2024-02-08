@@ -7,7 +7,7 @@
 ; |------------|---------|------------|------------|----------------|---------|------------|------------|---------|---------|------------|------------|------------|------------|
 ; {                                        Segment 1                                                       }{                            Segment 2 - n                          }
 
-%define READ_PROGRESS
+;%define READ_PROGRESS
 
 [BITS 16]
 [org 0x7c00]
@@ -136,7 +136,7 @@ boot_first:
     mov [BOOT_DISK], dl
 	sti
 
-	call reset_disk
+	;call reset_disk
 
 	pusha
 	mov si, load_fat_str

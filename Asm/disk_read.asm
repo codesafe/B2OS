@@ -210,7 +210,8 @@ load_kernel_inc:
 
     ; Get next sector number
     mov ax, [ebp - 2]
-    call get_sector_value	; FAT Chain에서 다음 sector 값을 얻는다
+    ;call get_sector_value	; FAT Chain에서 다음 sector 값을 얻는다
+	call get_sector_value_op
     mov [ebp - 2], ax		; 다음 logical cluster update
 
     cmp ax, FAT_END_OF_CHAIN	; (0x0FF0) chain의 끝인가??
@@ -227,6 +228,7 @@ load_kernel_inc:
 
 ;===============================================================
 
+%ifdef OLD_GET_SECTOR
 ; Input:
 ;   ax - sector index
 ; Output:
@@ -270,6 +272,7 @@ odd :
 
 get_sector_value_done:
     ret
+%endif
 
 ; 최적화 버전
 ; https://github.com/SQLpassion/osdev/blob/3ac59b14f6215a98343b20fd1f7fc1304538706f/main64/boot/functions.asm
@@ -306,7 +309,7 @@ _cylinder   	db 0x00
 _head       	db 0x00
 _sector     	db 0x00
 
-_fatBuffer			dw 0x00
+;_fatBuffer			dw 0x00
 _firstDataSector	dw 0x00
 _currentCluster 	dw 0x00
 
