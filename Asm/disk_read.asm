@@ -155,7 +155,7 @@ kernel_found:
     add bx, 0x1A	; 26 -> Directory 정보에서 First Logical Cluster는 26 Byte부터 있다 (2byte)
 					; https://www.sqlpassion.at/archive/2022/03/03/reading-files-from-a-fat12-partition/
     mov ax, [bx]
-	; ax - 찾은 kernel file sector number
+	; ax - 찾은 kernel file First Logical Cluster
     ret
 
 ;===============================================================
@@ -168,56 +168,52 @@ load_kernel:
     push ebp			; bp backup
     mov  ebp, esp		; sp = bp , stack 초기화
 
-    ; Push initial kernel sector
-    push ax				; ax = bp-2
+    ; ax = bp-2	: 찾은 kernelfile 시작 sector
+    push ax				
 
-    ; Push initial loaded sectors count
     xor bx, bx
-    push bx				; bx = bp-4
+	; bx = bp-4 : sector 읽기 카운트 초기화
+    push bx				
     
-    ; Initial segment
+    ; segment는 0x0000 부터
     mov bx, 0x0000
     mov es, bx
 
 load_next_sector:
     ; Offset (current sector index * 512 bytes)
-    mov ax, [ebp - 4]   ; push된 bx = 0
+    mov ax, [ebp - 4]   ; push된 bx 최초에는 0 : kernel read count
     mov dx, 0x200		; 512 
     mul dx				; [ebp - 4] * 512
     mov bx, ax
     add bx, [KERNEL_LOCATION]		; 0xF000 + ([ebp - 4] * 512)
     
     cmp bx, 0
-    jne LoadKernel_Increment
+    jne load_kernel_inc
 	; offset의 한계를 넘어가면 segment를 증가해야함 ( 맞나? )
     mov ax, es
     add ax, 0x1000
     mov es, ax
 
-LoadKernel_Increment:
-    ; Number of sectors to read
-    mov al, 1
+load_kernel_inc:
+    mov al, 1	; 1 sector씩 read
 
     ; Sector number
-    mov cx, [ebp - 2]   ; push된 ax
-    add cx, [NonDataSectors]
-    sub cx, 2
+    mov cx, [ebp - 2]   ; push된 kernel file 시작 logical cluster
+    add cx, FAT12_SECTOR_COUNT+BOOT_SECTOR_COUNT
+    sub cx, 2			; Directory의 값중 first logical cluster 값이 2이면 물리적 Sector 33에서 시작
+						; 만일 first logical cluster가 0이라면 이것은 Root directory를 말함
+    call read_disk
 
-    ; Load kernel sector
-    call LoadFloppyData
-
-    ; Increment loaded sectors count
     mov ax, [ebp - 4]
-    inc ax
-    mov [ebp - 4], ax
+    inc ax					; 다음 sector 읽기위해 kernel read count 증가
+    mov [ebp - 4], ax		; 증가한 카운트 메모리에 update
 
     ; Get next sector number
     mov ax, [ebp - 2]
-    call GetSectorValue
-    mov [ebp - 2], ax
+    call get_sector_value	; FAT Chain에서 다음 sector 값을 얻는다
+    mov [ebp - 2], ax		; 다음 logical cluster update
 
-    ; Check if the current sector was the last (end-of-chain marker)
-    cmp ax, 0x0FF0
+    cmp ax, FAT_END_OF_CHAIN	; (0x0FF0) chain의 끝인가??
     jl load_next_sector
 
     ; Return loaded kernel sectors count in bx
@@ -228,6 +224,49 @@ LoadKernel_Increment:
 
     ret
 
+
+;===============================================================
+
+; Input:
+;   ax - sector index
+; Output:
+;   ax - sector value
+get_sector_value:
+    ; Multiple sector index by 3/2 to get physical byte address
+    mov bx, 3
+    mul bx
+
+    mov bx, 2
+    xor dx, dx
+    div bx
+
+    ; Set initial FAT offset
+    mov bx, [FAT12_LOCATION]	; 0x7E00
+
+    ; Add FAT offset to the calculated byte address
+    add bx, ax
+
+    ; If remainder is equal to 0, then index is even, otherwise it's odd
+    cmp dx, 0
+    je even
+    jne odd
+
+even :
+    ; Even sector has pattern LL _H __
+    mov ah, [bx + 1]
+    mov al, [bx]
+    and ax, 0x0FFF
+    jmp get_sector_value_done
+
+odd :
+    ; Odd sector has pattern __ L_ HH
+    dec bx
+    mov ah, [bx + 2]
+    mov al, [bx + 1]
+    shr ax, 4
+
+get_sector_value_done:
+    ret
 
 ;===============================================================
 

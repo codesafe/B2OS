@@ -143,7 +143,7 @@ boot_first:
 	call print_str
 	popa
 
-	mov cl, 32 ; 33 섹터로드 - 1 boot
+	mov cl, FAT12_SECTOR_COUNT ; 33 섹터로드 - 1 boot
 	mov al, 1
 	xor bx, bx
 	mov es, bx
@@ -151,7 +151,9 @@ boot_first:
 	call read_disk
 
 	; todo. find kernel.bin file on FAT12
+	; 찾은 kernelfile의 sector => ax
 	call search_kernel_file
+
 	; todo. load kernel.bin to 0x0F000
 	call load_kernel
 
@@ -162,10 +164,14 @@ boot_first:
 
 %include "Asm/disk_read.asm"
 
-FAT12_LOCATION		equ	0x7E00
-KERNEL_LOCATION		equ 0xF000
+FAT12_LOCATION			equ	0x7E00
+KERNEL_LOCATION			equ 0xF000
+FAT12_SECTOR_COUNT		equ 32
+BOOT_SECTOR_COUNT		equ 1
 
-BOOT_DISK	db 0 	; Boot device number
+FAT_END_OF_CHAIN		equ 0x0FF0
+
+BOOT_DISK			db 0 	; Boot device number
 load_fat_str		db 'LOAD FAT', 0x0a, 0x0d, 0
 load_kernel_str		db 'LOAD KERNEL', 0x0a, 0x0d, 0
 
