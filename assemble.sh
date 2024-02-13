@@ -68,6 +68,13 @@ cat Out/full_kernel.bin > kernel.bin
 
 
 
+#!/bin/bash
+set -e
+COLOR_GREEN=$(tput setaf 2)		# green
+COLOR_RED=$(tput setaf 1)		# red
+COLOR_RESET=$(tput sgr0)		# reset
+
+echo "${COLOR_GREEN}Creating bootable floppy image...${COLOR_RESET}"
 sudo dd if=/dev/zero of=floppy.img bs=512 count=2880
 sudo dd if=boot.bin of=floppy.img bs=512 conv=notrunc
 sudo losetup /dev/loop0 floppy.img
@@ -76,6 +83,13 @@ sudo cp kernel.bin /mnt
 sudo umount /mnt
 sudo losetup -d /dev/loop0
 
+# mkfs.msdos -C floppy.img 1440
+# sudo dd if=boot.bin of=floppy.img bs=512 conv=notrunc
+# sudo losetup /dev/loop0 floppy.img
+# sudo mount /dev/loop0 /mnt
+# sudo cp kernel.bin /mnt
+# sudo umount /mnt
+# sudo losetup -d /dev/loop0
 
 
 #qemu-virgil -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
@@ -84,4 +98,6 @@ sudo losetup -d /dev/loop0
 # int13 extended mode는 hdd만됨
 #qemu-system-x86_64 -m 1024 -machine type=pc -drive format=raw,file=B2OS.bin
 #qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=ide, -m 128M
-qemu-system-x86_64 -drive format=raw,file=floppy.img,index=0,if=ide, -m 128M
+#qemu-system-x86_64 -drive format=raw,file=floppy.img,index=0,if=ide, -m 128M
+
+qemu-system-x86_64 -blockdev driver=file,node-name=fda,filename=floppy.img -device floppy,drive=fda,drive-type=144

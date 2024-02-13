@@ -7,7 +7,7 @@
 ; |------------|---------|------------|------------|----------------|---------|------------|------------|---------|---------|------------|------------|------------|------------|
 ; {                                        Segment 1                                                       }{                            Segment 2 - n                          }
 
-;%define READ_PROGRESS
+%define READ_PROGRESS
 
 [BITS 16]
 [org 0x7c00]
@@ -92,8 +92,6 @@ VolumeLabel			db 'B2OS-DISK  '    ; 11 chars
 FileSystemType		db 'FAT12   '       ; 8 chars
 ; 끝
 ;----------------------------------------------------------------------------------------
-; kernel.bin
-KERNELFILENAME		db 'KERNEL  BIN'    ; 11 chars
 
 ; TODO
 ; 1. FAT 정보를 0x7e00로 Load ( 33 Sector - 1 : Bootloader에서 읽은 1 sector 제외 )
@@ -171,9 +169,21 @@ BOOT_SECTOR_COUNT		equ 1
 
 FAT_END_OF_CHAIN		equ 0x0FF0
 
+; kernel.bin
+KERNELFILENAME		db 'KERNEL  BIN'    ; 11 chars
 BOOT_DISK			db 0 	; Boot device number
+
 load_fat_str		db 'LOAD FAT', 0x0a, 0x0d, 0
+found_kernel_str	db 'FOUND KERNEL', 0x0a, 0x0d, 0
 load_kernel_str		db 'LOAD KERNEL', 0x0a, 0x0d, 0
+disk_read_ok		db 'READ OK', 0x0a, 0x0d, 0
+disk_read_error		db 'READ ERR',0x0a, 0x0d, 0
+
+; data section for floppy operations
+_cylinder   	db 0x00
+_head       	db 0x00
+_sector     	db 0x00
+
 
 times 510-($-$$) db 0	; Boot loader를 512에 맞춤 (마지막 aa55를 빼고 코드부분이외 나머지를 0으로 총510바이트 + aa55 = 512)
 dw 0xaa55

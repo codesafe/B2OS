@@ -1,9 +1,6 @@
 
 [BITS 16]
 
-%define _OS_LOAD_SEGMENT 0x0050
-%define _OS_LOAD_OFFSET 0x0000
-
 reset_disk:
     xor ax,ax
     int 0x13
@@ -31,52 +28,24 @@ lbatochs:
 	ret
 
 ;===============================================================
-
-; @fn clusterToLBA: Convert a cluster value to a linear block address
-clustertolba:
-
-	sub ax,0x02								; make the cluster zero-based
-	xor cx,cx								; clear cx for operations
-	mov cl,byte [SectorsPerCluster]	        ; store the sectors per cluster in cl =>  0x01
-	mul cx									; multiply the cluster number by the sectors per cluster
-	add ax,word [_firstDataSector]			; and add the starting sector offset
-	ret
-
-
-;===============================================================
-
+; lba->chs 계산기 http://cars.car.coocan.jp/misc/chs2lba.html
+; cluster 19에서 잘못 load하는것은 floppy.img가 1.44MB아니고 2.8로 만들어졌기 때문
 ; lba : ax
 ; cx : read count
 read_disk:
-	mov di,0x5			; 오류시 재시도 횟수
-
-read_loop:
-	; we need to preserve these between reads
 	push ax
 	push bx
 	push cx
 
 	call lbatochs
-	;mov ax,0x0201				; ah = bios function 2, al = read 1 sector
-	mov ah, 0x02
-	mov al, 0x01
+	mov ax,0x0201				; ah = bios function 2, al = read 1 sector
 	mov ch,byte [_cylinder]
 	mov cl,byte [_sector]
 	mov dh,byte [_head]
 	mov dl,byte [BOOT_DISK]
 	int 0x13
 	jnc read_ok
-
-	; try to reset the disk for retry
-	call reset_disk
-	dec di
-
-	; restore for the next attempt
-	pop cx
-	pop bx
-	pop ax
-	jnz read_loop
-	stc
+	stc             ; set carry flag Error라고 set
 	jmp read_done
 
 read_ok:
@@ -85,23 +54,20 @@ read_ok:
  	mov si,read_progress
  	call print_str
 %endif
-
-	; restore to move on to the next sector
 	pop cx
 	pop bx
 	pop ax
 
 	add bx,word [BytesPerSector]	; es:bx -> 1 sector (512)
 	inc ax
-	loop read_disk
-	clc
+	loop read_disk          ; cx를 1감소 0 될때까지 반복
+	clc                     ; clear carry flag
 
 read_done:
 	jc read_error
 	mov si,disk_read_ok
 	call print_str
 	ret
-
 
 read_error:
 	mov si,disk_read_error
@@ -113,7 +79,7 @@ read_error:
 
 ; Load된 FAT의 Directory에서 Kernel.bin 파일 검색
 search_kernel_file :
-    mov cx, [FAT12_LOCATION]	; FAT 시작지점
+    mov cx, FAT12_LOCATION	; FAT 시작지점
 
     mov al, [FileAllocationTable]  	; 2
     mov dx, [SectorsPerFAT]  		; 9
@@ -146,7 +112,7 @@ compare_loop:
 
 filenot_match:
     add cx, 0x20    	; 14 sector * 512 / 224개 = 32 byte ( filename 1개당 32 byte )
-    jmp compare_loop	; 못찾았으니 다음 file 검색
+    jmp search_loop	; 못찾았으니 다음 file 검색
 
 kernel_found:
     ; Move address with sector number to bx register due to Intel limitations and then move sector number to ax register
@@ -156,6 +122,12 @@ kernel_found:
 					; https://www.sqlpassion.at/archive/2022/03/03/reading-files-from-a-fat12-partition/
     mov ax, [bx]
 	; ax - 찾은 kernel file First Logical Cluster
+
+	pusha
+	mov si, found_kernel_str
+	call print_str
+	popa
+
     ret
 
 ;===============================================================
@@ -304,22 +276,10 @@ get_sector_value_op_done:
 
 ;===============================================================
 
-; data section for floppy operations
-_cylinder   	db 0x00
-_head       	db 0x00
-_sector     	db 0x00
-
-;_fatBuffer			dw 0x00
-_firstDataSector	dw 0x00
-_currentCluster 	dw 0x00
-
-
 %include "./Asm/print16.asm"
 
 %ifdef READ_PROGRESS
 read_progress		db '.', 0
 %endif
 
-disk_read_ok		db 'READ OK', 0x0a, 0x0d, 0
-disk_read_error		db 'READ ERR',0x0a, 0x0d, 0
 
