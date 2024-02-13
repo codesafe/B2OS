@@ -7,7 +7,7 @@
 ; |------------|---------|------------|------------|----------------|---------|------------|------------|---------|---------|------------|------------|------------|------------|
 ; {                                        Segment 1                                                       }{                            Segment 2 - n                          }
 
-%define READ_PROGRESS
+;%define READ_PROGRESS
 
 [BITS 16]
 [org 0x7c00]
@@ -148,15 +148,15 @@ boot_first:
 	mov bx, FAT12_LOCATION	; 0x07e00에 32섹터 로드 시작
 	call read_disk
 
-	; todo. find kernel.bin file on FAT12
+	; find kernel.bin file on FAT12
 	; 찾은 kernelfile의 sector => ax
 	call search_kernel_file
 
-	; todo. load kernel.bin to 0x0F000
+	; load kernel.bin to 0x0F000
 	call load_kernel
 
-	; todo. jump to kernel
-
+	; jump to kernel
+	jmp 0x0000:KERNEL_LOCATION
 	jmp $
 
 
@@ -166,7 +166,6 @@ FAT12_LOCATION			equ	0x7E00
 KERNEL_LOCATION			equ 0xF000
 FAT12_SECTOR_COUNT		equ 32
 BOOT_SECTOR_COUNT		equ 1
-
 FAT_END_OF_CHAIN		equ 0x0FF0
 
 ; kernel.bin

@@ -65,8 +65,8 @@ read_ok:
 
 read_done:
 	jc read_error
-	mov si,disk_read_ok
-	call print_str
+	; mov si,disk_read_ok
+	; call print_str
 	ret
 
 read_error:
@@ -157,7 +157,7 @@ load_next_sector:
     mov dx, 0x200		; 512 
     mul dx				; [ebp - 4] * 512
     mov bx, ax
-    add bx, [KERNEL_LOCATION]		; 0xF000 + ([ebp - 4] * 512)
+    add bx, KERNEL_LOCATION		; 0xF000 + ([ebp - 4] * 512)
     
     cmp bx, 0
     jne load_kernel_inc
@@ -167,12 +167,12 @@ load_next_sector:
     mov es, ax
 
 load_kernel_inc:
-    mov al, 1	; 1 sector씩 read
+    mov cx, 1	; 1 sector씩 read
 
     ; Sector number
-    mov cx, [ebp - 2]   ; push된 kernel file 시작 logical cluster
-    add cx, FAT12_SECTOR_COUNT+BOOT_SECTOR_COUNT
-    sub cx, 2			; Directory의 값중 first logical cluster 값이 2이면 물리적 Sector 33에서 시작
+    mov ax, [ebp - 2]   ; push된 kernel file 시작 logical cluster
+    add ax, FAT12_SECTOR_COUNT+BOOT_SECTOR_COUNT
+    sub ax, 2			; Directory의 값중 first logical cluster 값이 2이면 물리적 Sector 33에서 시작
 						; 만일 first logical cluster가 0이라면 이것은 Root directory를 말함
     call read_disk
 
@@ -194,6 +194,11 @@ load_kernel_inc:
 
     mov esp, ebp
     pop ebp
+
+	pusha
+	mov si, load_kernel_str
+	call print_str
+	popa
 
     ret
 
@@ -257,7 +262,7 @@ get_sector_value_op:
 	mov dx, ax
 	shr dx, 1	; in /2 (2로 나눔)
 	add cx, dx	; (in * 3) / 2 의 간략버전
-	mov bx, [FAT12_LOCATION]	; 0x7E00
+	mov bx, FAT12_LOCATION	; 0x7E00
     add bx, cx
 	mov dx, word [bx]			; fat에서 2 바이트 읽음
 	test ax, 1					; 홀수 짝수 검사 (in의 최하위 1비트가 1인가??)
