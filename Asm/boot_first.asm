@@ -8,6 +8,7 @@
 ; {                                        Segment 1                                                       }{                            Segment 2 - n                          }
 
 ;%define READ_PROGRESS
+%define LOG
 
 [BITS 16]
 [org 0x7c00]
@@ -134,13 +135,16 @@ boot_first:
     mov [BOOT_DISK], dl
 	sti
 
-	;call reset_disk
+	call reset_disk
 
+%ifdef LOG
 	pusha
 	mov si, load_fat_str
 	call print_str
 	popa
+%endif
 
+;==========================================================================================
 	mov cl, FAT12_SECTOR_COUNT ; 33 섹터로드 - 1 boot
 	mov al, 1
 	xor bx, bx
@@ -148,33 +152,33 @@ boot_first:
 	mov bx, FAT12_LOCATION	; 0x07e00에 32섹터 로드 시작
 	call read_disk
 
-	; find kernel.bin file on FAT12
-	; 찾은 kernelfile의 sector => ax
-	call search_kernel_file
+;==========================================================================================
 
-	; load kernel.bin to 0x0F000
-	call load_kernel
+	mov bx, BOOT2FILENAME
+	call search_file
 
-	; jump to kernel
-	jmp 0x0000:KERNEL_LOCATION
+	; load boot2.bin to 0x7E00
+	mov cx, BOOT2_LOCATION
+	call load_file
+
+	; jump to boot2
+	jmp BOOT2_LOCATION
 	jmp $
 
 
 %include "Asm/disk_read.asm"
 
 FAT12_LOCATION			equ	0x7E00
-KERNEL_LOCATION			equ 0xF000
+;KERNEL_LOCATION			equ 0xF000
+BOOT2_LOCATION			equ 0x7000
 FAT12_SECTOR_COUNT		equ 32
 BOOT_SECTOR_COUNT		equ 1
 FAT_END_OF_CHAIN		equ 0x0FF0
 
-; kernel.bin
-KERNELFILENAME		db 'KERNEL  BIN'    ; 11 chars
+BOOT2FILENAME		db 'BOOT2   BIN'    ; 11 chars
 BOOT_DISK			db 0 	; Boot device number
 
 load_fat_str		db 'LOAD FAT', 0x0a, 0x0d, 0
-found_kernel_str	db 'FOUND KERNEL', 0x0a, 0x0d, 0
-load_kernel_str		db 'LOAD KERNEL', 0x0a, 0x0d, 0
 disk_read_ok		db 'READ OK', 0x0a, 0x0d, 0
 disk_read_error		db 'READ ERR',0x0a, 0x0d, 0
 

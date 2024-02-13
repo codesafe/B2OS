@@ -1,26 +1,34 @@
-
 [BITS 16]
-[org 0x7e00]
+[org 0x7000]
 
-KERNEL_LOCATION	equ	0x8200
+	; load kernel
+	mov bx, KERNELFILENAME
+	call search_file
 
-;boot_second:
-	mov bx, KERNEL_LOCATION
-	mov al, 63		; read 60 sectors
-	mov ch, 0x00		; from cylinder 0
-	mov cl, 0x04		; sector 4 boot_first가 2부터 2개 2,3 읽음 그러므로 4부터
-	mov dh, 0x00		; from head 0
-	call read_disk
+	; load kernel.bin to 0x0F000
+	mov cx, KERNEL_LOCATION
+	call load_file
 
-;--------------------------------------
+	pusha
+	mov si, load_kernel_str
+	call print_str
+	popa
 
-     ; Install GDT
+;=================================================================================
+
+	pusha
+	mov si, switch32_str
+	call print_str
+	popa
+
+	; change to protected mode
+    ; Install GDT
     cli
 	lgdt [GDT_descriptor]
 	
 	; Switch 32 Bit
 	call SWITCH_32
-	
+
 	cli                     ; off interrupt
 	jmp CODE_SEG:Entry32Bit ; CS will be Auto-Updated to CODE_SEG
 	jmp $
@@ -29,8 +37,34 @@ KERNEL_LOCATION	equ	0x8200
 %include "Asm/disk_read.asm"
 %include "Asm/gdt.asm"
 %include "Asm/switch32.asm"
-%include "Asm/print32.asm"
+
 ;%include "Asm/memory.asm"
+
+FAT12_LOCATION			equ	0x7E00
+KERNEL_LOCATION			equ 0xF000
+FAT12_SECTOR_COUNT		equ 32
+BOOT_SECTOR_COUNT		equ 1
+FAT_END_OF_CHAIN		equ 0x0FF0
+
+SectorsPerTrack		dw 18
+Head				dw 2
+BytesPerSector		dw 512
+FileAllocationTable	db 2
+SectorsPerFAT		dw 9
+
+; kernel.bin
+KERNELFILENAME			db 'KERNEL  BIN'    ; 11 chars
+BOOT_DISK		db 0 	; Boot device number
+_cylinder   	db 0x00
+_head       	db 0x00
+_sector     	db 0x00
+
+disk_read_ok		db 'READ OK', 0x0a, 0x0d, 0
+disk_read_error		db 'READ ERR',0x0a, 0x0d, 0
+
+;=================================================================================
+
+%include "Asm/print32.asm"
 
 [BITS 32]
 Entry32Bit:
@@ -54,12 +88,13 @@ Entry32Bit:
 	or al, 0x02
 	out 0x92, al
 
+	; start kernel ( kernel은 32bit 이므로...)
 	jmp KERNEL_LOCATION
 	jmp $
 	; Halting the system
 	;cli
 	;hlt
 
-;Bit32Str db "Starting 32Bit B2-OS !", 0	
-; 2섹터 == 1024 : 나머지를 0으로 1024 까지 채운다
-times 1024-($-$$) db 0x00
+
+load_kernel_str		db 'Load Kernel', 0x0a, 0x0d, 0
+switch32_str		db 'Switch to 32Bit mode', 0x0a, 0x0d, 0

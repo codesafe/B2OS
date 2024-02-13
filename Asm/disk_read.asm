@@ -78,7 +78,12 @@ read_error:
 ;===============================================================
 
 ; Load된 FAT의 Directory에서 Kernel.bin 파일 검색
-search_kernel_file :
+; bx : filename
+search_file :
+    push ebp
+    mov  ebp, esp
+    push bx     ; bp-2
+
     mov cx, FAT12_LOCATION	; FAT 시작지점
 
     mov al, [FileAllocationTable]  	; 2
@@ -91,7 +96,8 @@ search_kernel_file :
 
 search_loop:
     mov si, cx
-    mov di, KERNELFILENAME  ; kernel bin (kernel.bin)
+    ;mov di, KERNELFILENAME  ; kernel bin (kernel.bin)
+    mov di, [bp-2]  ; kernel bin (kernel.bin)
 
     xor dx, dx
 compare_loop:
@@ -121,34 +127,37 @@ kernel_found:
     add bx, 0x1A	; 26 -> Directory 정보에서 First Logical Cluster는 26 Byte부터 있다 (2byte)
 					; https://www.sqlpassion.at/archive/2022/03/03/reading-files-from-a-fat12-partition/
     mov ax, [bx]
+
+    mov esp, ebp
+    pop ebp
 	; ax - 찾은 kernel file First Logical Cluster
-
-	pusha
-	mov si, found_kernel_str
-	call print_str
-	popa
-
+; %ifdef LOG
+; 	pusha
+; 	mov si, found_kernel_str
+; 	call print_str
+; 	popa
+; %endif
     ret
 
 ;===============================================================
 
 ; Input:
-;   ax - initial kernel sector
+;   ax : initial kernel sector 
+;   ax로 전달받은 파일에 대하여 FAT에서 읽어 cx 위치에 로드한다
+;   cx : load mem location
 ; Output:
 ;   bx - loaded kernel sectors count
-load_kernel:
+load_file:
     push ebp			; bp backup
     mov  ebp, esp		; sp = bp , stack 초기화
-
-    ; ax = bp-2	: 찾은 kernelfile 시작 sector
-    push ax				
+    push ax				; ax = bp-2	: 찾은 kernelfile 시작 sector
 
     xor bx, bx
-	; bx = bp-4 : sector 읽기 카운트 초기화
-    push bx				
-    
+    push bx				; bx = bp-4 : sector 읽기 카운트 초기화
+    push cx             ; cx = bp-6 (읽힐 메모리 위치)
+
     ; segment는 0x0000 부터
-    mov bx, 0x0000
+    ;mov bx, 0x0000
     mov es, bx
 
 load_next_sector:
@@ -157,16 +166,17 @@ load_next_sector:
     mov dx, 0x200		; 512 
     mul dx				; [ebp - 4] * 512
     mov bx, ax
-    add bx, KERNEL_LOCATION		; 0xF000 + ([ebp - 4] * 512)
+    ;add bx, KERNEL_LOCATION		; 0xF000 + ([ebp - 4] * 512)
+    add bx, [ebp-6]		; 0xF000 + ([ebp - 4] * 512)
     
     cmp bx, 0
-    jne load_kernel_inc
+    jne load_file_inc
 	; offset의 한계를 넘어가면 segment를 증가해야함 ( 맞나? )
     mov ax, es
     add ax, 0x1000
     mov es, ax
 
-load_kernel_inc:
+load_file_inc:
     mov cx, 1	; 1 sector씩 read
 
     ; Sector number
@@ -195,11 +205,12 @@ load_kernel_inc:
     mov esp, ebp
     pop ebp
 
-	pusha
-	mov si, load_kernel_str
-	call print_str
-	popa
-
+; %ifdef LOG
+; 	pusha
+; 	mov si, load_kernel_str
+; 	call print_str
+; 	popa
+; %endif
     ret
 
 

@@ -7,12 +7,12 @@ export PATH=$PATH:/usr/local/i386elfgcc/bin
 # Compile assembly code
 # bin -> bin
 nasm "Asm/boot_first.asm" -f bin -o "Out/boot_first.bin"
-#nasm "Asm/boot_second.asm" -f bin -o "Out/boot_second.bin"
+nasm "Asm/boot_second.asm" -f bin -o "Out/boot_second.bin"
 
 # Compile C entry code
 # o -> elf format
-nasm "Asm/interrupt.asm" -f elf -o "Out/interrupt.o"
 nasm "Asm/kernel_entry.asm" -f elf -o "Out/kernel_entry.o"
+nasm "Asm/interrupt.asm" -f elf -o "Out/interrupt.o"
 
 
 # Compile C Kernel
@@ -61,6 +61,7 @@ i386-elf-ld -o "Out/full_kernel.bin" \
 
 
 cat Out/boot_first.bin > boot.bin
+cat Out/boot_second.bin > boot2.bin
 cat Out/full_kernel.bin > kernel.bin
 
 #cat Out/boot_first.bin Out/boot_second.bin > B2OS.bin
@@ -79,6 +80,7 @@ sudo dd if=/dev/zero of=floppy.img bs=512 count=2880
 sudo dd if=boot.bin of=floppy.img bs=512 conv=notrunc
 sudo losetup /dev/loop0 floppy.img
 sudo mount /dev/loop0 /mnt
+sudo cp boot2.bin /mnt
 sudo cp kernel.bin /mnt
 sudo umount /mnt
 sudo losetup -d /dev/loop0
@@ -92,12 +94,9 @@ sudo losetup -d /dev/loop0
 # sudo losetup -d /dev/loop0
 
 
-#qemu-virgil -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
-#qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
-
 # int13 extended mode는 hdd만됨
 #qemu-system-x86_64 -m 1024 -machine type=pc -drive format=raw,file=B2OS.bin
 #qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=ide, -m 128M
 #qemu-system-x86_64 -drive format=raw,file=floppy.img,index=0,if=ide, -m 128M
 
-qemu-system-x86_64 -blockdev driver=file,node-name=fda,filename=floppy.img -device floppy,drive=fda,drive-type=144
+#qemu-system-x86_64 -blockdev driver=file,node-name=fda,filename=floppy.img -device floppy,drive=fda,drive-type=144

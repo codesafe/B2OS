@@ -1,2 +1,2 @@
 cls
-qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=floppy, -m 128M
+qemu-system-x86_64 -blockdev driver=file,node-name=fda,filename=floppy.img -device floppy,drive=fda,drive-type=144
