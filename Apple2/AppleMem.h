@@ -22,10 +22,10 @@ void mem_Create();
 void mem_Destroy();
 void mem_Reset();
 
-BYTE mem_ReadByte(int addr);
-void mem_WriteByte(int addr, BYTE value);
-WORD mem_ReadWord(int addr);
-void mem_WriteWord(WORD value, int addr);
+BYTE mem_ReadByte(WORD addr);
+void mem_WriteByte(WORD addr, BYTE value);
+WORD mem_ReadWord(WORD addr);
+void mem_WriteWord(WORD value, WORD addr);
 
 WORD mem_UpLoadProgram(BYTE *code, int codesize);
 void mem_UpLoadProgram_Pos(int startPos, BYTE *code, int codesize);

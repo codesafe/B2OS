@@ -29,10 +29,11 @@ i386-elf-gcc -ffreestanding -m32 -c "Src/util.c" -o "Out/util.o"
 i386-elf-gcc -ffreestanding -m32 -c "Src/memory.c" -o "Out/memory.o"
 
 # apple2 emulator
-#i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleMachine.c" -o "Out/AppleMachine.o"
-#i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleDevice.c" -o "Out/AppleDevice.o"
-#i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleMem.c" -o "Out/AppleMem.o"
-#i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleCpu.c" -o "Out/AppleCpu.o"
+i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleMachine.c" -o "Out/AppleMachine.o"
+i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleDevice.c" -o "Out/AppleDevice.o"
+i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleMem.c" -o "Out/AppleMem.o"
+i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleCpu.c" -o "Out/AppleCpu.o"
+i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleFont.c" -o "Out/AppleFont.o"
 
 # Link
 i386-elf-ld -o "Out/full_kernel.bin" \
@@ -48,26 +49,22 @@ i386-elf-ld -o "Out/full_kernel.bin" \
     Out/idt.o \
     Out/util.o \
     Out/memory.o \
+    Out/AppleMem.o \
+    Out/AppleCpu.o \
+    Out/AppleDevice.o \
+    Out/AppleMachine.o \
+    Out/AppleFont.o \
     --oformat binary
-
-#    Out/AppleMem.o \
-#    Out/AppleCpu.o \
-#    Out/AppleDevice.o \
- #   Out/AppleMachine.o \
-
 
 
 #i386-elf-ld -o "Out/full_kernel.bin" -Ttext 0x1000 "Out/kernel_entry.o" "Out/kernel.o" "Out/console.o" "Out/low_level.o" --oformat binary
 
-
-cat Out/boot_first.bin > boot.bin
-cat Out/boot_second.bin > boot2.bin
-cat Out/full_kernel.bin > kernel.bin
+cat Out/boot_first.bin > Out/boot.bin
+cat Out/boot_second.bin > Out/boot2.bin
+cat Out/full_kernel.bin > Out/kernel.bin
 
 #cat Out/boot_first.bin Out/boot_second.bin > B2OS.bin
 #cat Out/boot_first.bin > B2OS.bin
-
-
 
 #!/bin/bash
 set -e
@@ -77,26 +74,18 @@ COLOR_RESET=$(tput sgr0)		# reset
 
 echo "${COLOR_GREEN}Creating bootable floppy image...${COLOR_RESET}"
 sudo dd if=/dev/zero of=floppy.img bs=512 count=2880
-sudo dd if=boot.bin of=floppy.img bs=512 conv=notrunc
+sudo dd if=Out/boot.bin of=floppy.img bs=512 conv=notrunc
 sudo losetup /dev/loop0 floppy.img
 sudo mount /dev/loop0 /mnt
-sudo cp boot2.bin /mnt
-sudo cp kernel.bin /mnt
+sudo cp Out/boot2.bin /mnt
+sudo cp Out/kernel.bin /mnt
 sudo umount /mnt
 sudo losetup -d /dev/loop0
-
-# mkfs.msdos -C floppy.img 1440
-# sudo dd if=boot.bin of=floppy.img bs=512 conv=notrunc
-# sudo losetup /dev/loop0 floppy.img
-# sudo mount /dev/loop0 /mnt
-# sudo cp kernel.bin /mnt
-# sudo umount /mnt
-# sudo losetup -d /dev/loop0
-
+echo "${COLOR_GREEN}bootable floppy image... Done${COLOR_RESET}"
 
 # int13 extended mode는 hdd만됨
 #qemu-system-x86_64 -m 1024 -machine type=pc -drive format=raw,file=B2OS.bin
 #qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=ide, -m 128M
 #qemu-system-x86_64 -drive format=raw,file=floppy.img,index=0,if=ide, -m 128M
 
-#qemu-system-x86_64 -blockdev driver=file,node-name=fda,filename=floppy.img -device floppy,drive=fda,drive-type=144
+qemu-system-x86_64 -blockdev driver=file,node-name=fda,filename=floppy.img -device floppy,drive=fda,drive-type=144

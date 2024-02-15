@@ -261,38 +261,38 @@ BYTE N : 1; //7: Negative
 #define SED			0xF8
 #define SEI			0x78
 
-typedef struct _StatusFlags
-{
-	BYTE C : 1;			//0: Carry Flag	
-	BYTE Z : 1;			//1: Zero Flag
-	BYTE I : 1;			//2: Interrupt disable
-	BYTE D : 1;			//3: Decimal mode
-	BYTE B : 1;			//4: Break
-	BYTE Unused : 1;	//5: Unused
-	BYTE V : 1;			//6: Overflow
-	BYTE N : 1;			//7: Negative
-} StatusFlags;
+// typedef struct StatusFlags
+// {
+// 	BYTE C : 1;			//0: Carry Flag	
+// 	BYTE Z : 1;			//1: Zero Flag
+// 	BYTE I : 1;			//2: Interrupt disable
+// 	BYTE D : 1;			//3: Decimal mode
+// 	BYTE B : 1;			//4: Break
+// 	BYTE Unused : 1;	//5: Unused
+// 	BYTE V : 1;			//6: Overflow
+// 	BYTE N : 1;			//7: Negative
+// } StatusFlags;
 
 	extern unsigned long cpu_tick;
 
 	// Registor
-	extern BYTE	A;		// Accumulator
-	extern BYTE	X;		// Index Registor
-	extern BYTE	Y;
-	extern BYTE	SP;		// Stack Pointer
-	extern WORD	PC;		// program control
+	// extern BYTE	A;		// Accumulator
+	// extern BYTE	X;		// Index Registor
+	// extern BYTE	Y;
+	// extern BYTE	SP;		// Stack Pointer
+	// extern WORD	PC;		// program control
 
 	// Processor Status : Flag
-	union _SF
-	{
-		BYTE PS;
-		struct _StatusFlags Flag;
-	};
+	// union SF
+	// {
+	// 	BYTE PS;
+	// 	struct StatusFlags Flag;
+	// };
 
-	extern union _SF _PS;
+	//extern union _SF _PS;
 
 	void ac_Init();
-	//void ac_Reset();
+	void ac_Reset_0();
 	void ac_Reset();
 	void ac_Reboot();
 
@@ -317,8 +317,8 @@ typedef struct _StatusFlags
 	BYTE ac_ReadByte(WORD add, unsigned long* cycle);
 	WORD ac_ReadWord(WORD addr, unsigned long* cycle);
 
-	void ac_WriteByte(BYTE value, int addr, unsigned long* cycle);
-	void ac_WriteWord(WORD value, int addr, unsigned long* cycle);
+	void ac_WriteByte(BYTE value, WORD addr, unsigned long* cycle);
+	void ac_WriteWord(WORD value, WORD addr, unsigned long* cycle);
 
 	//////////////////////////////////////////////////////////////////////////
 

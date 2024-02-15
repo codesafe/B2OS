@@ -1,11 +1,14 @@
 ﻿/*
 	MOS 6502 CPU Emulator
 */
+#include "../Src/console.h"
+#include "../Src/util.h"
 #include "AppleCPU.h"
 #include "AppleMem.h"
 
 #define USEOLD	0
 
+static bool log = true;
 unsigned long cpu_tick;
 
 // Registor
@@ -14,27 +17,44 @@ BYTE	X;		// Index Registor
 BYTE	Y;
 BYTE	SP;		// Stack Pointer
 WORD	PC;		// program control
-union _SF _PS;
 
-// for debug
-bool enableLog = false;
+typedef struct StatusFlags
+{
+	BYTE C : 1;			//0: Carry Flag	
+	BYTE Z : 1;			//1: Zero Flag
+	BYTE I : 1;			//2: Interrupt disable
+	BYTE D : 1;			//3: Decimal mode
+	BYTE B : 1;			//4: Break
+	BYTE Unused : 1;	//5: Unused
+	BYTE V : 1;			//6: Overflow
+	BYTE N : 1;			//7: Negative
+} StatusFlags;
+
+
+union SF
+{
+	BYTE PS;
+	struct StatusFlags Flag;
+};
+
+
+union SF _PS;
 
 void ac_Init()
 {
 	cpu_tick = 0;
-	ac_Reset();
-	enableLog = false;
+	ac_Reset_0();
 }
 
-// void ac_Reset()
-// {
-// 	A = 0;
-// 	X = 0;
-// 	Y = 0;
-// 	PS = 0;				// processor status (flags)
-// 	SP = STACK_POS;	// Stack pointer
-// 	PC = PC_START;		// program control
-// }
+void ac_Reset_0()
+{
+	A = 0;
+	X = 0;
+	Y = 0;
+	_PS.PS = 0;				// processor status (flags)
+	SP = STACK_POS;	// Stack pointer
+	PC = PC_START;		// program control
+}
 
 // reset all register
 void ac_Reset()
@@ -176,13 +196,13 @@ WORD ac_ReadWord(WORD addr, unsigned long* cycle)
 	return c;
 }
 
-void ac_WriteByte(BYTE value, int addr, unsigned long* cycle)
+void ac_WriteByte(BYTE value, WORD addr, unsigned long* cycle)
 {
 	mem_WriteByte(addr, value);
 	*cycle --;
 }
 
-void ac_WriteWord(WORD value, int addr, unsigned long* cycle)
+void ac_WriteWord(WORD value, WORD addr, unsigned long* cycle)
 {
 	mem_WriteWord(value, addr);
 	*cycle-=2;
@@ -195,15 +215,16 @@ void ac_WriteWord(WORD value, int addr, unsigned long* cycle)
 */
 WORD ac_GetStackAddress()
 {
-	WORD sp = STACK_ADDRESS + SP;
+	WORD sp = (WORD)STACK_ADDRESS + SP;
 	return sp;
 }
 
 // Byte를 Stack에 Push
 void ac_PushStackByte(BYTE value, unsigned long* cycle)
 {
-	ac_WriteByte(value, (int)ac_GetStackAddress, cycle);
-	SP--;
+	ac_WriteByte(value, ac_GetStackAddress(), cycle);
+	//SP--;
+	SP = safeDec(SP, 1);
 	*cycle--;
 }
 
@@ -211,17 +232,20 @@ void ac_PushStackByte(BYTE value, unsigned long* cycle)
 void ac_PushStackWord(WORD value, unsigned long* cycle)
 {
 	// Hi byte 먼저
-	ac_WriteByte(value >> 8, (int)ac_GetStackAddress, cycle);
-	SP--;
+	ac_WriteByte(value >> 8, ac_GetStackAddress(), cycle);
+	//SP--;
+	SP = safeDec(SP, 1);
 	// Lo byte 나중에
-	ac_WriteByte(value & 0xFF, (int)ac_GetStackAddress, cycle);
-	SP--;
+	ac_WriteByte(value & 0xFF, ac_GetStackAddress(), cycle);
+	//SP--;
+	SP = safeDec(SP, 1);
 }
 
 // 스택에서 1 byte POP
 BYTE ac_PopStackByte(unsigned long* cycle)
 {
- 	SP++;
+ 	//SP++;
+	SP = safeInc(SP, 1);
  	BYTE popbyte = ac_ReadByte(ac_GetStackAddress(), cycle);
 	*cycle--;
 	return popbyte;
@@ -230,9 +254,11 @@ BYTE ac_PopStackByte(unsigned long* cycle)
 // Stack에서 Word pop
 WORD ac_PopStackWord(unsigned long* cycle)
 {
-	SP++;
+	//SP++;
+	SP = safeInc(SP, 1);
 	BYTE lo = ac_ReadByte(ac_GetStackAddress(), cycle);
-	SP++;
+	//SP++;
+	SP = safeInc(SP, 1);
 	BYTE hi = ac_ReadByte(ac_GetStackAddress(), cycle);
 	WORD popWord = lo | (hi << 8);
 	*cycle--;
@@ -241,27 +267,28 @@ WORD ac_PopStackWord(unsigned long* cycle)
 }
 
 long long int ticks = 0;  // accumulated number of clock cycles
-
+int logcount = 0;
 int ac_Run(unsigned long _cycle)
 {
-	//const int CyclesRequested = cycle;
-
-	//while (cycle > 0)
 	unsigned long cycle = _cycle;
-	while (cycle>0)
+	while ( cycle > 0 )
 	{
 		unsigned long prevcycle = cycle;
-
 		WORD prevPC = PC;
 		// 여기에서 cycle 하나 소모
 		BYTE inst = ac_Fetch(&cycle);
 
-		// if (enableLog)
+		// if( log )
 		// {
-		// 	printf("A:[%2X] X:[%2X] Y:[%2X] PC:[%4X] ", A, X, Y, prevPC);
-		// 	printf("INST : [%2X] / C:[%d] Z:[%d] I:[%d] D:[%d] B:[%d] U:[%d] V:[%d] N:[%d]\n", inst,
-		// 		_PS.Flag.C, _PS.Flag.Z, _PS.Flag.I, _PS.Flag.D, _PS.Flag.B, _PS.Flag.Unused, _PS.Flag.V, _PS.Flag.N);
-		// }
+			//k_printnum(cycle);
+			//k_printnum(inst);
+			//k_printnum(PC);
+			//k_printnum(SP);
+			//k_print("--------");
+			//logcount++;
+			//if( logcount > 10)
+			//log = false;
+		//}
 
 		switch (inst)
 		{
@@ -470,7 +497,7 @@ int ac_Run(unsigned long _cycle)
 			case STA_ZPX :	// 4 cycle
 			{
 				// ZP + X에 A레지스터 내용쓰기
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				ac_WriteByte(A, addr, &cycle);
 			}
 			break;
@@ -557,7 +584,7 @@ int ac_Run(unsigned long _cycle)
 			case STY_ZPX:	// 4 cycle
 			{
 				// ZP + X에 Y레지스터 내용쓰기
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				ac_WriteByte(Y, addr, &cycle);
 			}
 			break;
@@ -586,6 +613,7 @@ int ac_Run(unsigned long _cycle)
 
 				BYTE lo = ac_ReadByte(PC, &cycle);
 				PC++;
+				//BYTE hi = (ac_ReadByte(PC, &cycle) << 8);
 				WORD address = lo | (ac_ReadByte(PC, &cycle) << 8);
 
 				ac_PushStackWord(PC, &cycle);
@@ -614,6 +642,15 @@ int ac_Run(unsigned long _cycle)
 				WORD addr = ac_PopStackWord(&cycle);
 				PC = addr + 1;
 				cycle -= 2;
+
+				// if( log )
+				// {
+				// 	k_printnum(inst);
+				// 	k_printnum(PC);
+				// 	k_printnum(SP);
+				// 	k_print("--------");
+				// 	log = false;
+				// }
 			}
 			break;
 
@@ -709,7 +746,7 @@ int ac_Run(unsigned long _cycle)
 
 			case AND_ZPX:	// 4 cycle
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				A &= ac_ReadByte(addr, &cycle);;
 				ac_SetZeroNegative(A);
 			}
@@ -775,7 +812,7 @@ int ac_Run(unsigned long _cycle)
 
 			case ORA_ZPX:
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				A |= ac_ReadByte(addr, &cycle);;
 				ac_SetZeroNegative(A);
 			}
@@ -841,7 +878,7 @@ int ac_Run(unsigned long _cycle)
 
 			case EOR_ZPX:
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				A ^= ac_ReadByte(addr, &cycle);;
 				ac_SetZeroNegative(A);
 			}
@@ -1013,7 +1050,7 @@ int ac_Run(unsigned long _cycle)
 			break;
 			case INC_ZPX:
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				v++;
 				cycle--;
@@ -1055,7 +1092,7 @@ int ac_Run(unsigned long _cycle)
 			break;
 			case DEC_ZPX: // 6 cycle
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				v--;
 				cycle--;
@@ -1108,7 +1145,7 @@ int ac_Run(unsigned long _cycle)
 
 			case ADC_ZPX:	// 4 cycle
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				ac_Execute_ADC(v);
 			}
@@ -1175,7 +1212,7 @@ int ac_Run(unsigned long _cycle)
 
 			case SBC_ZPX:
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				ac_Execute_SBC(v);
 			}
@@ -1243,7 +1280,7 @@ int ac_Run(unsigned long _cycle)
 			
 			case CMP_ZPX:
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				ac_Execute_CMP(v);
 			}
@@ -1364,7 +1401,7 @@ int ac_Run(unsigned long _cycle)
 
 			case ASL_ZPX: // 6 cycle
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				ac_Execute_ASL(&v, &cycle);
 				ac_WriteByte(v, addr, &cycle);
@@ -1410,7 +1447,7 @@ int ac_Run(unsigned long _cycle)
 			break;
 			case LSR_ZPX:	// 6 cycle
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				ac_Execute_LSR(&v, &cycle);
 				ac_WriteByte(v, addr, &cycle);
@@ -1451,7 +1488,7 @@ int ac_Run(unsigned long _cycle)
 			break;
 			case ROL_ZPX:	// 6 cycle
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				ac_Execute_ROL(&v, &cycle);
 				ac_WriteByte(v, addr, &cycle);
@@ -1494,7 +1531,7 @@ int ac_Run(unsigned long _cycle)
 			break;
 			case ROR_ZPX:
 			{
-				WORD addr = ac_addr_mode_ZP(&cycle);
+				WORD addr = ac_addr_mode_ZPX(&cycle);
 				BYTE v = ac_ReadByte(addr, &cycle);;
 				ac_Execute_ROR(&v, &cycle);
 				ac_WriteByte(v, addr, &cycle);
@@ -1680,11 +1717,14 @@ int ac_Run(unsigned long _cycle)
 #else
 				PC++;
 				ac_WriteByte(((PC) >> 8) & 0xFF, 0x100 + SP, &cycle);
-				SP--;
+				//SP--;
+				SP = safeDec(SP, 1);
 				ac_WriteByte(PC & 0xFF, 0x100 + SP, &cycle);
-				SP--;
+				//SP--;
+				SP = safeDec(SP, 1);
 				ac_WriteByte(_PS.PS | FLAG_BREAK, 0x100 + SP, &cycle);
-				SP--;
+				//SP--;
+				SP = safeDec(SP, 1);
 				_PS.Flag.I = 1;
 				_PS.Flag.D = 0;
 				PC = ac_ReadByte(0xFFFE, &cycle) | ac_ReadByte(0xFFFF, &cycle) << 8;
@@ -1701,11 +1741,14 @@ int ac_Run(unsigned long _cycle)
 				//BYTE PS = PopStackByte(mem, &cycle);
 				//PC = PopStackWord(mem, &cycle);
 
-				SP++;
+				//SP++;
+				SP = safeInc(SP, 1);
 				_PS.PS = ac_ReadByte(0x100 + SP, &cycle);
-				SP++;
+				//SP++;
+				SP = safeInc(SP, 1);
 				PC = ac_ReadByte(0x100 + SP, &cycle);
-				SP++;
+				//SP++;
+				SP = safeInc(SP, 1);
 				PC |= ac_ReadByte(0x100 + SP, &cycle) << 8;
 				cycle -= 5;
 			}
@@ -1723,25 +1766,25 @@ int ac_Run(unsigned long _cycle)
 				break;
 		}
 
+		if( prevcycle < cycle ) break;
 		//tick+= prevcycle-cycle;
 	}
-
-	return /*CyclesRequested - */cycle;
+	return cycle;
 }
 
-void ac_LoadToRegister(unsigned long* cycle, BYTE *reg)
-{
-	*reg = ac_Fetch(cycle);
-	ac_SetZeroNegative(*reg);
-}
+// void ac_LoadToRegister(unsigned long* cycle, BYTE *reg)
+// {
+// 	*reg = ac_Fetch(cycle);
+// 	ac_SetZeroNegative(*reg);
+// }
 
 // ZP에 있는 값을 레지스터에 로드
-void ac_LoadToRegisterFromZP(unsigned long* cycle, BYTE *reg)
-{
-	BYTE zpa = ac_Fetch(cycle);
-	*reg = ac_ReadByte(zpa, cycle);
-	ac_SetZeroNegative(*reg);
-}
+// void ac_LoadToRegisterFromZP(unsigned long* cycle, BYTE *reg)
+// {
+// 	BYTE zpa = ac_Fetch(cycle);
+// 	*reg = ac_ReadByte(zpa, cycle);
+// 	ac_SetZeroNegative(*reg);
+// }
 
 ////////////////////////////////////////////////////////////////////////////// memory addressing mode
 

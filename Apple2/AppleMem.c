@@ -6,6 +6,7 @@
 #include "AppleMem.h"
 #include "AppleDevice.h"
 #include "../Src/memory.h"
+#include "../Src/console.h"
 
 bool LCWritable = true;
 bool LCReadable = false;
@@ -53,52 +54,46 @@ void mem_Reset()
 }
 
 
-BYTE mem_ReadByte(int address)
+BYTE mem_ReadByte(WORD address)
 {
-#if 0
-	BYTE v = memory[address];
-	if (address == 0xCFFF || ((address & 0xFF00) == 0xC000))
-		v = device->SoftSwitch(address, 0, false);
-	return v;
-#else
-	if (address < RAMSIZE)
+	if (address < (WORD)RAMSIZE)
 		return ram[address];                                                        // RAM
 
-	if (address >= ROMSTART) {
+	if (address >= (WORD)ROMSTART) {
 		if (!LCReadable)
-			return rom[address - ROMSTART];                                           // ROM
+			return rom[address - (WORD)ROMSTART];                                           // ROM
 
-		if (LCBank2Enable && (address < 0xE000))
+		if (LCBank2Enable && (address < (WORD)0xE000))
 			return bk2[address - BK2START];                                           // BK2
 
 		return lgc[address - LGCSTART];                                             // LC
 	}
 
 	if ((address & 0xFF00) == SL6START)
+	{
+		//k_print("DISK");
 		return sl6[address - SL6START];  // disk][
+	}
 
 	if ((address & 0xF000) == 0xC000)
-		return (ad_SoftSwitch(address, 0, false));
+	{
+		// k_print("SOFT");
+		// k_printnum(address);
+		return (ad_SoftSwitch(address, 0, false));			
+	}
 
 	return 0;
-#endif
 }
 
-void mem_WriteByte(int address, BYTE value)
+void mem_WriteByte(WORD address, BYTE value)
 {
-#if 0
-
-	memory[address] = value;
-	if (address == 0xCFFF || ((address & 0xFF00) == 0xC000))
-		device->SoftSwitch(address, value, true);
-#else
-	if (address < RAMSIZE) {
+	if (address < (WORD)RAMSIZE) {
 		ram[address] = value;                                                       // RAM
 		return;
 	}
 
-	if (LCWritable && (address >= ROMSTART)) {
-		if (LCBank2Enable && (address < 0xE000)) {
+	if (LCWritable && (address >= (WORD)ROMSTART)) {
+		if (LCBank2Enable && (address < (WORD)0xE000)) {
 			bk2[address - BK2START] = value;                                          // BK2
 			return;
 		}
@@ -111,10 +106,9 @@ void mem_WriteByte(int address, BYTE value)
 		ad_SoftSwitch(address, value, true);
 		return;
 	}
-#endif
 }
 
-WORD mem_ReadWord(int addr)
+WORD mem_ReadWord(WORD addr)
 {
 	BYTE m0 = mem_ReadByte(addr);
 	BYTE m1 = mem_ReadByte(addr + 1);
@@ -122,36 +116,36 @@ WORD mem_ReadWord(int addr)
 	return w;
 }
 
-void mem_WriteWord(WORD value, int addr)
+void mem_WriteWord(WORD value, WORD addr)
 {
 	mem_WriteByte(addr, value >> 8);
 	mem_WriteByte(addr + 1, value & 0xFF);
 }
 
 
-// 프로그램 업로드
-WORD mem_UpLoadProgram(BYTE* code, int codesize)
-{
-	// 상위 1 WORD는 시작 위치 (PC)
-	WORD addr = code[0] | (code[1] << 8);
-	for (int i = 0; i < codesize-2; i++)
-	{
-		memory[addr+i] = code[i+2];
-	}
-	return addr;
-}
+// // 프로그램 업로드
+// WORD mem_UpLoadProgram(BYTE* code, int codesize)
+// {
+// 	// 상위 1 WORD는 시작 위치 (PC)
+// 	WORD addr = code[0] | (code[1] << 8);
+// 	for (int i = 0; i < codesize-2; i++)
+// 	{
+// 		memory[addr+i] = code[i+2];
+// 	}
+// 	return addr;
+// }
 
-void mem_UpLoadProgram_Pos(int startPos, BYTE* code, int codesize)
-{
-	for (int i = 0; i < codesize; i++)
-		memory[startPos+i] = code[i];
-}
+// void mem_UpLoadProgram_Pos(int startPos, BYTE* code, int codesize)
+// {
+// 	for (int i = 0; i < codesize; i++)
+// 		memory[startPos+i] = code[i];
+// }
 
 
-void mem_UpLoadToRom(BYTE* code)
-{
-	memcpy(rom, code, ROMSIZE);
-}
+// void mem_UpLoadToRom(BYTE* code)
+// {
+// 	memcpy(rom, code, ROMSIZE);
+// }
 
 void mem_ResetRam()
 {

@@ -28,3 +28,18 @@ char* reverse(const char* str, char* buffer, int len)
 	//buffer[i] = '\0';
 	return buffer;
 }
+
+// wrap-around를 막자
+unsigned char safeDec(unsigned char src, char value)
+{
+	unsigned char result = src - value;
+	result = result > src ? 0 : result;
+	return result;
+}
+
+unsigned char safeInc(unsigned char src, char value)
+{
+	unsigned char result = src + value;
+	result = result < src ? 0xFF : result;
+	return result;
+}

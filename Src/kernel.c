@@ -6,7 +6,15 @@
 #include "util.h"
 #include "memory.h"
 
+#include "../Apple2/AppleMachine.h"
+
+//#define TARGET_FRAME 30
+#define WINDOW_SIZE_X 320
+#define WINDOW_SIZE_Y 200
+
+
 static unsigned char g_memory[MAX_MEM_SIZE];
+static int frame = 0;
 
 void print_logo() 
 {
@@ -45,10 +53,30 @@ void init_kernel()
 	k_init_mem(g_memory, MAX_MEM_SIZE);
 	//displayMemoryInfo();
 	k_srand(global_tick);
-	k_sleep(1500);
+	k_sleep(1500*20);
 	//malloctest();
 }
 
+void init_A2()
+{
+	k_setVgaMode(WINDOW_SIZE_X, WINDOW_SIZE_Y, 256);
+	k_clearVga(0);
+	machine_InitMachine();
+}
+
+void kernel_loop()
+{
+	unsigned long p = 17050;
+	//unsigned long p = 1000;
+	machine_Run(p);
+
+	// Render
+	machine_Render(frame);
+	if (frame++ > TARGET_FRAME) 
+	 	frame = 0;
+}
+
+#if 0
 int graphic_width = 320;
 int graphic_height = 200;
 
@@ -66,10 +94,15 @@ void runDemo()
 		//k_sleep(10);
 	};
 }
+#endif
 
 void kmain(void)
 {
     init_kernel();
-	runDemo();
-	while(1){};
+	init_A2();
+	//runDemo();
+	while(1)
+	{
+		kernel_loop();
+	};
 }

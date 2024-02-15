@@ -36,6 +36,7 @@ void k_scrollup()
       // line(N+1) -> line(N)
       memcpy(consolemem + (i*MAX_X*2), consolemem + ((i+1)*MAX_X*2) , MAX_X *2);
     }
+    memset(consolemem + ((MAX_Y-1)*MAX_X*2), 0 ,MAX_X);
 } 
 
 void k_print(char *str)
@@ -51,6 +52,36 @@ void k_print(char *str)
   k_prinxy(str, 0, cursorpos);
   cursorpos++;
 }
+
+void k_printn(char *str1, char *str2, char *str3 )
+{
+  int pos = 0;
+  char temp[80]={0,};
+
+  if( str1 != NULL )
+  {
+      int len = k_strlen(str1);
+      memcpy(temp, str1, len);
+      temp[len] = '|';
+      pos+=len + 1;
+  }
+
+  if( str2 != NULL )
+  {
+      int len = k_strlen(str2);
+      memcpy(temp + pos, str2, len);
+      temp[len+pos] = '|';
+      pos+=len + 1;
+  }
+
+  if( str3 != NULL )
+  {
+      int len = k_strlen(str3);
+      memcpy(temp + pos, str3, len);
+  }
+  k_print(temp);
+}
+
 
 void k_prinxy(char *str, int x, int y)
 {
@@ -83,4 +114,24 @@ int k_num2ascii(unsigned long n, char str[])
 
     reverse(temp, str, i);
     return i;
+}
+
+void k_printnum(unsigned long n)
+{
+  char temp[64] = {0,};
+  k_num2ascii(n, temp);
+  k_print(temp);
+}
+
+int k_strlen(char *str)
+{
+  int len = 0;
+  while(1)
+  {
+    if( str[len] == 0 || str[len] == '\0' || str[len] == '\n')
+      break;
+    len++;
+  }
+
+  return len;
 }

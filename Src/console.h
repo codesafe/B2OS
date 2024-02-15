@@ -27,8 +27,13 @@ void k_init_console();
 void k_clear_console();
 void k_putc(char c, int x, int y);
 void k_print(char *str);
+void k_printn(char *str1, char *str2, char *str3 );
 void k_prinxy(char *str, int x, int y);
 int k_get_offset(int row, int col);
 int k_num2ascii(unsigned long n, char str[]);
+void k_printnum(unsigned long n);
+
+int k_strlen(char *str);
+
 
 #endif

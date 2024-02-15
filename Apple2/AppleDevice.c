@@ -1,16 +1,16 @@
 
 #include "Predef.h"
 #include "../Src/memory.h"
+#include "../Src/vga.h"
+#include "../Src/util.h"
+#include "../Src/console.h"
 #include "AppleCPU.h"
 #include "AppleMem.h"
 #include "AppleDevice.h"
-//#include "AppleFont.h"
+#include "AppleFont.h"
 
 
-bool loadromfile;
-bool resetMachine;
-bool colorMonitor;
-BYTE zoomscale;
+bool colorMonitor = false;
 
 float GCP[2]; // GC Position ranging from 0 (left) to 255 right
 float GCC[2]; // $C064 (GC0) and $C065 (GC1) Countdowns
@@ -20,7 +20,7 @@ BYTE GCActionSpeed; // Game Controller speed at which it goes to the edges
 BYTE GCReleaseSpeed;// Game Controller speed at which it returns to center
 long long int GCCrigger; // $C070 the tick at which the GCs were reseted
 
-int	currentDrive;
+int	currentDrive = 0;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -36,8 +36,11 @@ int LoResCache[24][40];
 int HiResCache[192][40];
 BYTE previousBit[192][40];
 BYTE flashCycle;
+BYTE keyboard = 0;
 
-struct Color* backbuffer = NULL;	// Render Backbuffer
+// 이거 쓰지 않음
+//struct Color* backbuffer = NULL;	// Render Backbuffer
+unsigned char *colorbuffer = NULL;
 
 struct FloppyDrive disk[2];
 BYTE updatedrive;
@@ -86,26 +89,22 @@ const int offsetHGR[192] = {                                                  //
 	0x03D0, 0x07D0, 0x0BD0, 0x0FD0, 0x13D0, 0x17D0, 0x1BD0, 0x1FD0 };            // lines 184-191
 
 
-const int color[16][3] = {                                                    // the 16 low res colors
-	{ 0,   0,   0	  }, { 226, 57,  86  }, { 28,  116, 205 }, { 126, 110, 173 },
+// the 16 low res colors
+const int color[16][3] = {                                                    
+	{ 0,   0,   0	}, { 226, 57,  86  }, { 28,  116, 205 }, { 126, 110, 173 },
 	{ 31,  129, 128 }, { 137, 130, 122 }, { 86,  168, 228 }, { 144, 178, 223 },
 	{ 151, 88,  34	}, { 234, 108, 21  }, { 158, 151, 143 }, { 255, 206, 240 },
 	{ 144, 192, 49	}, { 255, 253, 166 }, { 159, 210, 213 }, { 255, 255, 255 }
 };
 
-const int hcolor[16][3] = {                                                   // the high res colors (2 light levels)
+// the high res colors (2 light levels)
+const int hcolor[16][3] = {                                                   
 	{ 0,   0,   0   }, { 144, 192, 49  }, { 126, 110, 173 }, { 255, 255, 255 },
 	{ 0,   0,   0   }, { 234, 108, 21  }, { 86,  168, 228 }, { 255, 255, 255 },
 	{ 0,   0,   0   }, { 63,  55,	 86  }, { 72,  96,  25	}, { 255, 255, 255 },
 	{ 0,   0,   0   }, { 43,  84,	 114 }, { 117, 54,  10	}, { 255, 255, 255 }
 };
 
-
-void Init_Apple2Device()
-{
-	backbuffer = NULL;
-	ad_Reset();
-}
 
 /*
 ad_~Apple2Device()
@@ -122,32 +121,18 @@ ad_~Apple2Device()
 
 void ad_Create()
 {
-	//cpu = cpu;
-	//font.Create();
-	zoomscale = 3;
-	//volume = 5;
+	ad_Reset();
+	af_Create();
 
-	// 스크린 백버퍼
-	//backbuffer = new Color[SCREENSIZE_X * SCREENSIZE_Y];
+	// 컬러의 Index 처리한다
+	colorbuffer = malloc( SCREENSIZE_X * SCREENSIZE_Y );
 	ad_ClearScreen();
-
-	// renderImage.data = backbuffer;
-	// renderImage.width = SCREENSIZE_X;
-	// renderImage.height = SCREENSIZE_Y;
-	// renderImage.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
-	// renderImage.mipmaps = 1;
-	// renderTexture = LoadTextureFromImage(renderImage);
-
 }
 
 void ad_Reset()
 {
-	//dumpMachine = false;
-	loadromfile = false;
-
-	resetMachine = false;
 	colorMonitor = true;
-	//keyboard = 0;
+	keyboard = 0;
 
 	pixelGR.x = 0;
 	pixelGR.y = 0;
@@ -201,25 +186,25 @@ void ad_Reset()
 
 void ad_resetPaddles()
 {
-	// GCC[0] = GCP[0] * GCP[0]; // initialize the countdown for both paddles
-	// GCC[1] = GCP[1] * GCP[1]; // to the square of their actuall values (positions)
-	// GCCrigger = cpu_tick;	// records the time this was done
+	GCC[0] = GCP[0] * GCP[0]; // initialize the countdown for both paddles
+	GCC[1] = GCP[1] * GCP[1]; // to the square of their actuall values (positions)
+	GCCrigger = cpu_tick;	// records the time this was done
 }
 
 BYTE ad_readPaddle(int pdl)
 {
 	// // the speed at which the GC values decrease
-	// const float GCFreq = 6.6f;
+	const float GCFreq = 6.6f;
 
-	// // decreases the countdown
-	// GCC[pdl] -= (cpu_tick - GCCrigger) / GCFreq;
+	// decreases the countdown
+	GCC[pdl] -= (cpu_tick - GCCrigger) / GCFreq;
 
-	// // timeout
-	// if (GCC[pdl] <= 0)
-	// {
-	// 	GCC[pdl] = 0;
-	// 	return 0;
-	// }
+	// timeout
+	if (GCC[pdl] <= 0)
+	{
+		GCC[pdl] = 0;
+		return 0;
+	}
 
 	// not timeout, return something with the MSB set
 	return 0x80;
@@ -231,13 +216,13 @@ BYTE ad_SoftSwitch(WORD address, BYTE value, bool WRT)
 	{
 		// KEYBOARD
 		case 0xC000: 
-			//return(keyboard);
-			return 0;
+			return(keyboard);
+			//return 0;
 		// KBDSTROBE
 		case 0xC010: 
-			//keyboard &= 0x7F; 
-			//return(keyboard);
-			return 0;
+			keyboard &= 0x7F; 
+			return(keyboard);
+			//return 0;
 
 		// TAPEOUT??
 		case 0xC020:
@@ -330,7 +315,8 @@ BYTE ad_SoftSwitch(WORD address, BYTE value, bool WRT)
 			// if (gamepad.pressbtn2)
 			// 	return 0x80;
 			// else
-				return 0;
+			//	return 0;
+			return 0;
 		}
 		// Push Button 1
 		case 0xC062: 
@@ -338,7 +324,8 @@ BYTE ad_SoftSwitch(WORD address, BYTE value, bool WRT)
 			// if (gamepad.pressbtn1)
 			// 	return 0x80;
 			// else
-				return 0;
+			//	return 0;
+			return 0;
 		}
 
 // 		// Push Button 2
@@ -504,32 +491,22 @@ void ad_ClearScreen()
 	for (int y = 0; y < SCREENSIZE_Y; y++)
 		for (int x = 0; x < SCREENSIZE_X; x++)
 		{
-			//backbuffer[y * SCREENSIZE_X + x] = CLITERAL(Color) { 30, 30, 30, 255 };
+			colorbuffer[y * SCREENSIZE_X + x] = 0;	// 0은 black
 		}
 }
 
-void ad_DrawPoint(int x, int y, int r, int g, int b)
+// palette의 index로 그림
+void ad_DrawPixelIndex(int x, int y, unsigned char index)
 {
-	Color color;
-	if (colorMonitor)
-	{
-		color.r = r; color.g = g; color.b = b; color.a = 0xff;
-	}
-	else
-	{
-		float grayscale = (0.299f * r) + (0.587f * g) + (0.114f * b);
-		color.r = 0; color.g = (BYTE)grayscale; color.b = 0; color.a = 0xff;
-	}
-
-	backbuffer[y * SCREENSIZE_X + x] = color;
+	colorbuffer[y * SCREENSIZE_X + x] = index;
 }
 
-void ad_DrawRect(struct _RECT rect, int r, int g, int b)
+void ad_DrawRectIndex(struct _RECT rect, unsigned char index)
 {
 	for (int y = 0; y < (int)rect.height; y++)
 		for (int x = 0; x < (int)rect.width; x++)
 		{
-			ad_DrawPoint((int)rect.x + x, (int)rect.y + y, r, g, b);
+			ad_DrawPixelIndex((int)rect.x + x, (int)rect.y + y, index);
 		}
 }
 
@@ -598,11 +575,13 @@ void ad_Render(int frame)
 
 						// first nibble(4bit) 1/2 Byte
 						colorIdx = glyph & 0x0F;
-						ad_DrawRect(pixelGR, color[colorIdx][0], color[colorIdx][1], color[colorIdx][2]);
+						//ad_DrawRect(pixelGR, color[colorIdx][0], color[colorIdx][1], color[colorIdx][2]);
+						ad_DrawRectIndex(pixelGR, colorIdx);
 
 						pixelGR.y += 4;                                                       // second block
 						colorIdx = (glyph & 0xF0) >> 4;                                       // second nibble
-						ad_DrawRect(pixelGR, color[colorIdx][0], color[colorIdx][1], color[colorIdx][2]);
+						//ad_DrawRect(pixelGR, color[colorIdx][0], color[colorIdx][1], color[colorIdx][2]);
+						ad_DrawRectIndex(pixelGR, colorIdx);
 					}
 				}
 			}
@@ -648,7 +627,8 @@ void ad_Render(int frame)
 							}
 							colorIdx = even + colorSet + (bits[bit] << 1) + (pbit);
 
-							ad_DrawPoint(x++, line, hcolor[colorIdx][0], hcolor[colorIdx][1], hcolor[colorIdx][2]);
+							//ad_DrawPoint(x++, line, hcolor[colorIdx][0], hcolor[colorIdx][1], hcolor[colorIdx][2]);
+							ad_DrawPixelIndex(x++, line, colorIdx);
 							pbit = bits[bit++];                                               // proceed to the next pixel
 							even = even ? 0 : 8;                                              // one pixel every two is darker
 						}
@@ -698,11 +678,11 @@ void ad_Render(int frame)
 
 				if (fontattr == FONT_NORMAL || (fontattr == FONT_FLASH && frame < 15))
 				{
-					//font.RenderFont(backbuffer, glyph, col * FONT_X, line * FONT_Y, false);
+					af_RenderFont(colorbuffer, glyph, col * FONT_X, line * FONT_Y, false);
 				}
 				else
 				{
-					//font.RenderFont(backbuffer, glyph, col * FONT_X, line * FONT_Y, true);
+					af_RenderFont(colorbuffer, glyph, col * FONT_X, line * FONT_Y, true);
 				}
 			}
 		}
@@ -711,23 +691,15 @@ void ad_Render(int frame)
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	// Render Backbuffer
-	// UnloadTexture(renderTexture);
-	// renderTexture = LoadTextureFromImage(renderImage);
-
-	// Vector2 pos;
- 	// pos.x = 300;
- 	// pos.y = 10;
-	// DrawTextureEx(renderTexture, pos, 0, zoomscale, WHITE);
-
-	// const int gap = 8;
-	// Rectangle rec;
-	// rec.x = pos.x - gap;
-	// rec.y = pos.y - gap;
-	// rec.width = (float)(SCREENSIZE_X * zoomscale + (gap * 2));
-	// rec.height = (float)(SCREENSIZE_Y * zoomscale + (gap * 2));
-	// ad_DrawRectangleLinesEx(rec, 2, GRAY);
-
+	// Backbuffer -> Draw
+	for(int y = 0; y<SCREENSIZE_Y; y++)
+		for(int x = 0; x<SCREENSIZE_X; x++)
+		{
+			unsigned char index = colorbuffer[y * SCREENSIZE_X + x];
+			//int index = k_rand() % 15;
+			k_drawPixel(x, y, index);
+		}
+	
 	if (++flashCycle == 30)
 		flashCycle = 0;
 
@@ -735,43 +707,13 @@ void ad_Render(int frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 // Apple Disk II 
-bool ad_InsertFloppy(const char* filename, int drv)
-{
-	// std::string path = filename;
-	// size_t idx = path.rfind('.');
-	// std::string ext = path.substr(idx+1);
-
-	// if (ext == "nib")
-	// {
-	// 	FILE* f = fopen(filename, "rb");
-	// 	if (!f || fread(disk[drv].data, 1, 232960, f) != 232960)
-	// 		return false;
-	// 	fclose(f);
-
-	// 	sprintf(disk[drv].filename, "%s", filename);
-
-	// 	f = fopen(filename, "ab");
-	// 	if (!f)
-	// 	{
-	// 		// 쓰기 가능
-	// 		disk[drv].readOnly = true;
-	// 		fclose(f);
-	// 	}
-	// 	else
-	// 		disk[drv].readOnly = false;	// 읽기만 가능
-
-	// 	return true;
-	// }
-	// else if (ext == "dsk")
-	// {
-	// 	// dsk --> nib
-	// 	sprintf(disk[drv].filename, "%s", filename);
-	// 	bool ret = LoadDskFile((char*)filename, disk[drv].data);
-	// }
-
-	return(1);
-}
+// bool ad_InsertFloppy(int drv)
+// {
+// 	memcpy(disk[drv].data, rawData, 232960);
+// 	return true;
+// }
 
 void ad_stepMotor(WORD address)
 {
@@ -804,6 +746,8 @@ void ad_setDrv(int drv)
 	disk[drv].motorOn = disk[!drv].motorOn || disk[drv].motorOn;                  // if any of the motors were ON
 	disk[!drv].motorOn = false;                                                   // motor of the other drive is set to OFF
 	currentDrive = drv;                                                                 // set the current drive
+
+	k_print("SetDrive");
 }
 
 
@@ -827,10 +771,21 @@ bool ad_UpdateFloppyDisk()
 		return false;
 }
 
-void ad_InsetFloppy()
+//#include "LodeRunner.c"
+#include "u4.c"
+
+void ad_ResetFloppy()
 {
 	memset(&disk[0], 0, sizeof(struct FloppyDrive));
 	memset(&disk[1], 0, sizeof(struct FloppyDrive));
+}
+
+bool ad_InsertFloppy(int drv)
+{
+	memset(&disk[0], 0, sizeof(struct FloppyDrive));
+	memset(&disk[1], 0, sizeof(struct FloppyDrive));
+
+	memcpy(disk[drv].data, rawData, 232960);
 
 //	InsertFloppy("rom/DOS3.3.nib", 0);
 //	InsertFloppy("rom/LodeRunner.nib", 0);
@@ -840,7 +795,7 @@ void ad_InsetFloppy()
 //	InsertFloppy("rom/Ultima5-1.nib", 0);
 //	InsertFloppy("rom/Captain Goodnight-A.nib", 0);
 //	InsertFloppy("rom/Where in the World is Carmen Sandiego-A.nib", 0);
-
+	return true;
 }
 
 bool ad_GetDiskMotorState()
@@ -868,106 +823,6 @@ void ad_PlaySound()
 
 void ad_UpdateKeyBoard()
 {
-/*
-	int key = GetKeyPressed();
-	bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
-
-	switch (key)
-	{
-	case KEY_A:            keyboard = 0xC1;   break;
-	case KEY_B:            keyboard = 0xC2;   break;
-	case KEY_C:            keyboard = 0xC3;   break;
-	case KEY_D:            keyboard = 0xC4;   break;
-	case KEY_E:            keyboard = 0xC5;   break;
-	case KEY_F:            keyboard = 0xC6;   break;
-	case KEY_G:            keyboard = 0xC7;   break;
-	case KEY_H:            keyboard = 0xC8;   break;
-	case KEY_I:            keyboard = 0xC9;   break;
-	case KEY_J:            keyboard = 0xCA;   break;
-	case KEY_K:            keyboard = 0xCB;   break;
-	case KEY_L:            keyboard = 0xCC;   break;
-	case KEY_M:            keyboard = 0xCD;   break;
-	case KEY_N:            keyboard = 0xCE;   break;
-	case KEY_O:            keyboard = 0xCF;   break;
-	case KEY_P:            keyboard = 0xD0;   break;
-	case KEY_Q:            keyboard = 0xD1;   break;
-	case KEY_R:            keyboard = 0xD2;   break;
-	case KEY_S:            keyboard = 0xD3;   break;
-	case KEY_T:            keyboard = 0xD4;   break;
-	case KEY_U:            keyboard = 0xD5;   break;
-	case KEY_V:            keyboard = 0xD6;   break;
-	case KEY_W:            keyboard = 0xD7;   break;
-	case KEY_X:            keyboard = 0xD8;   break;
-	case KEY_Y:            keyboard = 0xD9;   break;
-	case KEY_Z:            keyboard = 0xDA;   break;
-
-	case KEY_ZERO:			keyboard = shift ? 0xA9 : 0xB0; break;             // 0 )
-	case KEY_ONE:			keyboard = shift ? 0xA1 : 0xB1; break;             // 1 !
-	case KEY_TWO:			keyboard = shift ? 0xC0 : 0xB2; break;             // 2 @
-	case KEY_THREE:         keyboard = shift ? 0xA3 : 0xB3; break;             // 3 #
-	case KEY_FOUR:			keyboard = shift ? 0xA4 : 0xB4; break;             // 4 $
-	case KEY_FIVE:			keyboard = shift ? 0xA5 : 0xB5; break;             // 5 %
-	case KEY_SIX:			keyboard = shift ? 0xDE : 0xB6; break;             // 6 ^
-	case KEY_SEVEN:         keyboard = shift ? 0xA6 : 0xB7; break;             // 7 &
-	case KEY_EIGHT:         keyboard = shift ? 0xAA : 0xB8; break;             // 8 *
-	case KEY_NINE:			keyboard = shift ? 0xA8 : 0xB9; break;             // 9 (
-
-
-	case KEY_LEFT_BRACKET:	keyboard = shift ? 0x9B : 0xDB;   break;   // [ {
-	case KEY_BACKSLASH:		keyboard = shift ? 0x9C : 0xDC;   break;   // \ |
-	case KEY_RIGHT_BRACKET:	keyboard = shift ? 0x9D : 0xDD;   break;   // ] }
-
-	case KEY_APOSTROPHE:    keyboard = shift ? 0xA2 : 0xA7;   break;   // ' "
-	case KEY_COMMA:			keyboard = shift ? 0xBC : 0xAC;   break;   // , <
-	case KEY_PERIOD:		keyboard = shift ? 0xBE : 0xAE;   break;   // . >
-
-	case KEY_MINUS:			keyboard = shift ? 0xDF : 0xAD;   break;	// - _
-	case KEY_SLASH:			keyboard = shift ? 0xBF : 0xAF;   break;	// / ?
-	case KEY_SEMICOLON:	keyboard = shift ? 0xBA : 0xBB;   break;	// ; :
-	case KEY_EQUAL:			keyboard = shift ? 0xAB : 0xBD;   break;	// = +
-
-	case KEY_BACKSPACE:		keyboard = 0x88;	break;             // BS
-	case KEY_LEFT:			keyboard = 0x88;    break;             // BS
-	case KEY_RIGHT:			keyboard = 0x95;    break;             // NAK
-	case KEY_SPACE:			keyboard = 0xA0;    break;
-	case KEY_ESCAPE:		keyboard = 0x9B;    break;             // ESC
-	case KEY_ENTER:			keyboard = 0x8D;    break;             // CR
-
-	// RESET
-	case KEY_F1:
-		resetMachine = true;
-		break;
-
-	// COLOR <--> GREEM
-	case KEY_F2:
-		colorMonitor = !colorMonitor;
-		break;
-
-		// ZOOM
-	case KEY_F3:
-		zoomscale = zoomscale + 1 > 3 ? 1 : zoomscale + 1;
-		break;
-
-		// MUTE Speaker
-	case KEY_F4:
-		silence = !silence;
-		break;
-
-	case KEY_F9:
-		loadromfile = true;
-		break;
-
-	case KEY_F10:
-		dumpMachine = true;
-		break;
-
-	case KEY_F11:
-		loaddumpmachine = true;
-		break;
-
-	}
-*/
-
 
 }
 

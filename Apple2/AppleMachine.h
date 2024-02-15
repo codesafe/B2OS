@@ -10,7 +10,7 @@ void machine_InitMachine();
 bool machine_Booting();
 
 void machine_Reset();
-void machine_Run(int cycle);
+void machine_Run(unsigned long cycle);
 void machine_Render(int frame);
 
 

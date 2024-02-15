@@ -1,26 +1,33 @@
-//	#include "Predef.h"
-#include "rombios.h"
 #include "../Src/memory.h"
+#include "../Src/console.h"
+#include "rombios.h"
 #include "AppleMachine.h"
-
+#include "AppleDevice.h"
 
 
 void machine_InitMachine()
 {
-	mem_Create();
-	ad_InsetFloppy();
-	// unset the Power-UP byte
-	mem_WriteByte(0x3F4, 0);
+	k_print("[Start Init APPLE2 Machine]\n");
 	// init cpu
 	ac_Init();
-	ac_Reset();
+	mem_Create();
+	ad_ResetFloppy();
+
+	// unset the Power-UP byte
+	mem_WriteByte(0x3F4, 0);
+	//ac_Reset();
 
 	// dirty hack, fix soon... if I understand why
 	mem_WriteByte(0x4D, 0xAA);   // Joust crashes if this memory location equals zero
 	mem_WriteByte(0xD0, 0xAA);   // Planetoids won't work if this memory location equals zero
+	
 	ad_Create();
+	k_print("[Done APPLE2 Machine]\n");
 
-	machine_Booting();
+	ad_InsertFloppy(0);
+	
+	//machine_Booting();
+	machine_Reset();
 }
 
 bool machine_Booting()
@@ -46,21 +53,15 @@ void machine_Reset()
 	machine_Booting();
 }
 
-void machine_Run(int cycle)
+void machine_Run(unsigned long cycle)
 {
-	// if (resetMachine)
-	// {
-	// 	Reset();
-	// 	return;
-	// }
-
-	ad_UpdateInput();
+	//ad_UpdateInput();
 	ac_Run(cycle);
 	while (1)
 	{
 		if( ad_UpdateFloppyDisk() == false ) 
 			break;
-		ac_Run(10000);
+		ac_Run(5000);
 	}
 }
 

@@ -1,9 +1,11 @@
-#if 0
 
-//#include <stdlib.h>
+#include "../Src/memory.h"
 #include "AppleFont.h"
-#include "Apple2Device.h"
+//#include "Apple2Device.h"
 
+
+unsigned char af_font[FONT_NUM][FONT_X*FONT_Y];
+unsigned char af_invfont[FONT_NUM][FONT_X*FONT_Y];
 
 const unsigned char normalfont[958] = {
 	0x42, 0x4D, 0xBE, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3E, 0x00,
@@ -176,96 +178,98 @@ void af_Create()
 {
 	int w, h;
 	//unsigned char* img = read_bmp("font-normal.bmp", &w, &h);
-	unsigned char* img = read_bmp_memory((char*)normalfont, &w, &h);
+	unsigned char* img = af_read_bmp_memory((char*)normalfont, &w, &h);
 
 	for (int n = 0; n < FONT_NUM; n++)
 	{
 		int pos = 0;
 		for (int y = 0; y < FONT_Y; y++)
 			for (int x = 0; x < FONT_X; x++)
-				font[n][pos++] = img[y * w + (x + n * FONT_X)];
+				af_font[n][pos++] = img[y * w + (x + n * FONT_X)];
  	}
 	free(img);
 
 	//img = read_bmp("font-reverse.bmp", &w, &h);
-	img = read_bmp_memory((char*)inversefont, &w, &h);
+	img = af_read_bmp_memory((char*)inversefont, &w, &h);
 	for (int n = 0; n < FONT_NUM; n++)
 	{
 		int pos = 0;
 		for (int y = 0; y < FONT_Y; y++)
 			for (int x = 0; x < FONT_X; x++)
-				invfont[n][pos++] = img[y * w + (x + n * FONT_X)];
+				af_invfont[n][pos++] = img[y * w + (x + n * FONT_X)];
 	}
 
 	free(img);
 
 }
 
-void af_RenderFont(Color* backbuffer, int fontnum, int posx, int posy, bool inv)
+void af_RenderFont(unsigned char* backbuffer, int fontnum, int posx, int posy, bool inv)
 {
 	int pos = 0;
 	for(int y=0; y<FONT_Y; y++)
 		for (int x = 0; x < FONT_X; x++)
 		{
-			unsigned char c = inv ? invfont[fontnum][pos++] : font[fontnum][pos++];
+			unsigned char c = inv ? af_invfont[fontnum][pos++] : af_font[fontnum][pos++];
 			if (c == 1)
 			{
-				if(backbuffer == NULL)
-					DrawPixel(posx + x, posy + y, GREEN);
-				else
-					backbuffer[((posy+y)*SCREENSIZE_X) + (posx + x)] = GREEN;
+				// if(backbuffer == NULL)
+				// 	DrawPixel(posx + x, posy + y, GREEN);
+				// else
+				// 	backbuffer[((posy+y)*SCREENSIZE_X) + (posx + x)] = GREEN;
+				backbuffer[((posy+y)*SCREENSIZE_X) + (posx + x)] = 15;	// white
 			}
 			else
 			{
-				if (backbuffer == NULL)
-					DrawPixel(posx + x, posy + y, BLACK);
-				else
-					backbuffer[((posy + y) * SCREENSIZE_X) + (posx + x)] = BLACK;
+				// if (backbuffer == NULL)
+				// 	DrawPixel(posx + x, posy + y, BLACK);
+				// else
+					backbuffer[((posy + y) * SCREENSIZE_X) + (posx + x)] = 0;	// black
 			}
 		}
 }
 
-unsigned char* af_read_bmp(const char* fname, int* _w, int* _h)
-{
-	unsigned char head[54];
-	FILE* f = NULL;
-	fopen_s(&f, fname, "rb");
 
-	// BMP header
-	fread(head, 1, 54, f);
+// unsigned char* af_read_bmp(const char* fname, int* _w, int* _h)
+// {
+// 	unsigned char head[54];
+// 	FILE* f = NULL;
+// 	fopen_s(&f, fname, "rb");
 
-	int w = head[18] + (((int)head[19]) << 8) + (((int)head[20]) << 16) + (((int)head[21]) << 24);
-	int h = head[22] + (((int)head[23]) << 8) + (((int)head[24]) << 16) + (((int)head[25]) << 24);
+// 	// BMP header
+// 	fread(head, 1, 54, f);
 
-	// lines are aligned on 4-byte boundary
-	int lineSize = (w / 8 + (w / 8) % 4);
-	int fileSize = lineSize * h;
+// 	int w = head[18] + (((int)head[19]) << 8) + (((int)head[20]) << 16) + (((int)head[21]) << 24);
+// 	int h = head[22] + (((int)head[23]) << 8) + (((int)head[24]) << 16) + (((int)head[25]) << 24);
 
-	unsigned char* img = (unsigned char*)malloc(w * h);
-	unsigned char* data = (unsigned char*)malloc(fileSize);
+// 	// lines are aligned on 4-byte boundary
+// 	int lineSize = (w / 8 + (w / 8) % 4);
+// 	int fileSize = lineSize * h;
 
-	// skip
-	fseek(f, 54, SEEK_SET);
-	// skip palette
-	fseek(f, 8, SEEK_CUR);
+// 	unsigned char* img = (unsigned char*)malloc(w * h);
+// 	unsigned char* data = (unsigned char*)malloc(fileSize);
 
-	fread(data, 1, fileSize, f);
+// 	// skip
+// 	fseek(f, 54, SEEK_SET);
+// 	// skip palette
+// 	fseek(f, 8, SEEK_CUR);
 
-	// decode bits
-	int i, j, k, rev_j;
-	for (j = 0, rev_j = h - 1; j < h; j++, rev_j--)
-	{
-		for (i = 0; i < w / 8; i++) {
-			int fpos = j * lineSize + i, pos = rev_j * w + i * 8;
-			for (k = 0; k < 8; k++)
-				img[pos + (7 - k)] = (data[fpos] >> k) & 1;
-		}
-	}
+// 	fread(data, 1, fileSize, f);
 
-	free(data);
-	*_w = w; *_h = h;
-	return img;
-}
+// 	// decode bits
+// 	int i, j, k, rev_j;
+// 	for (j = 0, rev_j = h - 1; j < h; j++, rev_j--)
+// 	{
+// 		for (i = 0; i < w / 8; i++) {
+// 			int fpos = j * lineSize + i, pos = rev_j * w + i * 8;
+// 			for (k = 0; k < 8; k++)
+// 				img[pos + (7 - k)] = (data[fpos] >> k) & 1;
+// 		}
+// 	}
+
+// 	free(data);
+// 	*_w = w; *_h = h;
+// 	return img;
+// }
 
 
 unsigned char* af_read_bmp_memory(char* buffer, int* _w, int* _h)
@@ -307,4 +311,3 @@ unsigned char* af_read_bmp_memory(char* buffer, int* _w, int* _h)
 	return img;
 }
 
-#endif
