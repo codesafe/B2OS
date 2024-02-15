@@ -603,21 +603,17 @@ void ad_Render(int frame)
 				{
 					int x = col * 7;
 					even = 0;
-
 					word = (WORD)(mem_ReadByte((videoAddress + offsetHGR[line] + col + 1))) << 8;    // store the two next bytes into 'word'
 					word += mem_ReadByte(videoAddress + offsetHGR[line] + col);              // in reverse order
-
 					// check if this group of 7 dots need a redraw
 					if (HiResCache[line][col] != word || !flashCycle) 
 					{
-
 						for (bit = 0; bit < 16; bit++)                                        // store all bits 'word' into 'bits'
 							bits[bit] = (word >> bit) & 1;
 
 						colorSet = bits[7] * 4;                                             // select the right color set
 						pbit = previousBit[line][col];                                      // the bit value of the left dot
 						bit = 0;                                                            // starting at 1st bit of 1st byte
-
 						while (bit < 15) 
 						{                                                  // until we reach bit7 of 2nd byte
 							if (bit == 7) 
@@ -771,8 +767,10 @@ bool ad_UpdateFloppyDisk()
 		return false;
 }
 
-//#include "LodeRunner.c"
-#include "u4.c"
+ #include "LodeRunner.c"
+//#include "u4.c"
+//#include "u5.c"
+//#include "k.c"
 
 void ad_ResetFloppy()
 {

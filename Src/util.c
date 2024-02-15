@@ -33,13 +33,13 @@ char* reverse(const char* str, char* buffer, int len)
 unsigned char safeDec(unsigned char src, char value)
 {
 	unsigned char result = src - value;
-	result = result > src ? 0 : result;
+	//result = result > src ? 0 : result;
 	return result;
 }
 
 unsigned char safeInc(unsigned char src, char value)
 {
 	unsigned char result = src + value;
-	result = result < src ? 0xFF : result;
+	//result = result < src ? 0xFF : result;
 	return result;
 }

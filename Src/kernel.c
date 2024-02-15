@@ -53,7 +53,7 @@ void init_kernel()
 	k_init_mem(g_memory, MAX_MEM_SIZE);
 	//displayMemoryInfo();
 	k_srand(global_tick);
-	k_sleep(1500*20);
+	k_sleep(1500);
 	//malloctest();
 }
 
@@ -66,8 +66,8 @@ void init_A2()
 
 void kernel_loop()
 {
-	unsigned long p = 17050;
-	//unsigned long p = 1000;
+	//unsigned long p = 17050;
+	unsigned long p = 3050;	
 	machine_Run(p);
 
 	// Render

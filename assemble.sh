@@ -56,9 +56,6 @@ i386-elf-ld -o "Out/full_kernel.bin" \
     Out/AppleFont.o \
     --oformat binary
 
-
-#i386-elf-ld -o "Out/full_kernel.bin" -Ttext 0x1000 "Out/kernel_entry.o" "Out/kernel.o" "Out/console.o" "Out/low_level.o" --oformat binary
-
 cat Out/boot_first.bin > Out/boot.bin
 cat Out/boot_second.bin > Out/boot2.bin
 cat Out/full_kernel.bin > Out/kernel.bin
@@ -84,8 +81,4 @@ sudo losetup -d /dev/loop0
 echo "${COLOR_GREEN}bootable floppy image... Done${COLOR_RESET}"
 
 # int13 extended mode는 hdd만됨
-#qemu-system-x86_64 -m 1024 -machine type=pc -drive format=raw,file=B2OS.bin
-#qemu-system-x86_64 -drive format=raw,file=B2OS.bin,index=0,if=ide, -m 128M
-#qemu-system-x86_64 -drive format=raw,file=floppy.img,index=0,if=ide, -m 128M
-
-qemu-system-x86_64 -blockdev driver=file,node-name=fda,filename=floppy.img -device floppy,drive=fda,drive-type=144
+#qemu-system-x86_64 -blockdev driver=file,node-name=fda,filename=floppy.img -device floppy,drive=fda,drive-type=144
