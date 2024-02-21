@@ -21,6 +21,8 @@
 	call print_str
 	popa
 
+	call enable_A20line
+
 	; change to protected mode
     ; Install GDT
     cli
@@ -32,6 +34,14 @@
 	cli                     ; off interrupt
 	jmp CODE_SEG:Entry32Bit ; CS will be Auto-Updated to CODE_SEG
 	jmp $
+
+enable_A20line:
+    push bp
+    mov bp, sp
+    mov ax, 0x2401
+    int 0x15
+    leave
+    ret
 
 
 %include "Asm/disk_read.asm"
@@ -82,11 +92,6 @@ Entry32Bit:
     ;call Clear32
 	;mov si, Bit32Str
 	;call Print32
-
-	;enable the A20 line
-	in al, 0x92
-	or al, 0x02
-	out 0x92, al
 
 	; start kernel ( kernel은 32bit 이므로...)
 	jmp KERNEL_LOCATION

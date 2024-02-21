@@ -1,0 +1,1 @@
+qemu-system-i386 -boot d -cdrom DerpOS.iso -m 64

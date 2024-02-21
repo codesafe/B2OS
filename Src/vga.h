@@ -3,6 +3,19 @@
 
 #include "kerneldef.h"
 
+#if 1
+
+extern int screenX;
+extern int screenY;
+
+bool k_setVgaMode(int width, int height, int bpp);
+void k_clearVga(unsigned int color);
+void k_drawPixel(unsigned int x, unsigned int y, unsigned int color);
+void k_drawRect (unsigned int xpos, unsigned int ypos, unsigned int width, unsigned int height, unsigned int color);
+
+void k_swapBuffer();
+
+#else
 
 // Number of registers
 #define	VGA_NUM_SEQ_REGS	5
@@ -42,5 +55,7 @@ void k_drawPixel(int x, int y, unsigned char colourIndex);
 
 void writeRegisters(unsigned char* regs);
 unsigned char* getFrameBufferSegment();;
+
+#endif
 
 #endif

@@ -1,6 +1,68 @@
 
+#include "memory.h"
 #include "low_level.h"
 #include "vga.h"
+#include "console.h"
+
+#if 1
+
+#include "vbe.h"
+#define SCREEN_PAGE_NUM 2
+
+struct Video_Info *vgainfo;
+unsigned char *screenbuffer[SCREEN_PAGE_NUM];
+unsigned char currentScreenpage = 0;
+
+bool k_setVgaMode(int width, int height, int bpp)
+{
+	vgainfo = vbe_init(width, height, bpp);
+	// k_printnum(info->width);
+	// k_printnum(info->height);
+	// k_printnum(info->bpp);
+
+	for(int i=0;i<SCREEN_PAGE_NUM; i++)
+		screenbuffer[i] = (unsigned char *)malloc(width * height * 3);
+
+	return true;
+}
+
+
+void k_clearVga(unsigned int color)
+{
+	k_drawRect(0, 0, vgainfo->width, vgainfo->height, color);
+}
+
+void k_drawPixel(unsigned int  x, unsigned int  y, unsigned int color)
+{
+
+}
+
+void k_drawRect(unsigned int xpos, unsigned int ypos, unsigned int width, unsigned int height, unsigned int color)
+{
+    for(int y = 0; y < height*2; y++)
+    {
+        int offset = (vgainfo->width * 3 * (ypos + y)) + (xpos * 3);
+        for(int x = 0; x < width*3; x+=3)
+        {
+            screenbuffer[currentScreenpage][offset+x+0] = (color & 0xFF); 			//B
+            screenbuffer[currentScreenpage][offset+x+1] = (color & 0xFF00) >> 8; 	//G
+            screenbuffer[currentScreenpage][offset+x+2] = (color & 0xFF0000) >> 16;	//R
+        }
+    }
+}
+
+void k_swapBuffer()
+{
+    unsigned char* frame = (unsigned char*)vgainfo->frameBuffer;// - 0xC0000000;
+    for(int i = 0; i < (vgainfo->width * vgainfo->height * 3); i++)
+    {
+        frame[i] = screenbuffer[currentScreenpage][i];
+    }
+
+	currentScreenpage = currentScreenpage==0?1:0;
+}
+
+#else
 
 unsigned char *frameBufferSegment = 0;
 int screenX = 0;
@@ -292,3 +354,6 @@ void k_drawPixel(int x, int y, unsigned char colourIndex)
 	unsigned char *pixelAddr = frameBufferSegment + (screenX*y + x);
 	*pixelAddr = colourIndex;
 }
+
+
+#endif

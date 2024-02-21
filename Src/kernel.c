@@ -9,8 +9,8 @@
 #include "../Apple2/AppleMachine.h"
 
 //#define TARGET_FRAME 30
-#define WINDOW_SIZE_X 320
-#define WINDOW_SIZE_Y 200
+#define WINDOW_SIZE_X 640
+#define WINDOW_SIZE_Y 480
 
 
 static unsigned char g_memory[MAX_MEM_SIZE];
@@ -46,7 +46,7 @@ void init_kernel()
 {
 	k_init_console();
 	k_clear_console();
-    print_logo();
+    //print_logo();
 	k_init_isr();
 	k_init_timer(1000);
 	//k_sleep(100);
@@ -59,8 +59,9 @@ void init_kernel()
 
 void init_A2()
 {
-	k_setVgaMode(WINDOW_SIZE_X, WINDOW_SIZE_Y, 256);
-	k_clearVga(0);
+	k_setVgaMode(WINDOW_SIZE_X, WINDOW_SIZE_Y, 24);
+	k_clearVga(0xFF00FF00);
+	k_swapBuffer();
 	machine_InitMachine();
 }
 
@@ -103,6 +104,6 @@ void kmain(void)
 	//runDemo();
 	while(1)
 	{
-		kernel_loop();
+		//kernel_loop();
 	};
 }
