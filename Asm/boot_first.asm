@@ -1,6 +1,6 @@
 ; |------------|---------|------------|------------|----------------|---------|------------|------------|---------|---------|------------|------------|------------|------------|
 ; |   1 KiB    |  256 B  |   21 KiB   |   1 KiB    |     4 KiB      |  3 KiB  |   512 B    |   28 KiB   | 578 KiB |  1 KiB  |  383 KiB   |   15 MiB   |   1 MiB    |   4 MiB    |
-; | Interrupts |   BDA   | Floppy DMA | Memory map | Page Directory |  Free   | Bootloader | FAT12 data |  Kernel |  EBDA   | Video, ROM |  Reserved  |   Stack    | Page Table |
+; | Interrupts |   BDA   | Floppy DMA | Memory map | Page Directory |  Boot2  | Bootloader | FAT12 data |  Kernel |  EBDA   | Video, ROM |  Reserved  |   Stack    | Page Table |
 ; |            |         |            |            |                |         |            |            |         |         |            |            |            |            |
 ; |  0x00000   | 0x00400 |  0x00500   |  0x05C00   |    0x06000     | 0x07000 |  0x07C00   |  0x07E00   | 0x0F000 | 0x9FC00 |  0xA0000   | 0x00100000 | 0x01000000 | 0x01100000 |
 ; |  0x003FF   | 0x004FF |  0x05BFF   |  0x05FFF   |    0x06FFF     | 0x07BFF |  0x07DFF   |  0x0EFFF   | 0x9FBDD | 0x9FFFF |  0xFFFFF   | 0x00FFFFFF | 0x010FFFFF | 0x014FFFFF |
@@ -169,7 +169,6 @@ boot_first:
 %include "Asm/disk_read.asm"
 
 FAT12_LOCATION			equ	0x7E00
-;KERNEL_LOCATION			equ 0xF000
 BOOT2_LOCATION			equ 0x7000
 FAT12_SECTOR_COUNT		equ 32
 BOOT_SECTOR_COUNT		equ 1

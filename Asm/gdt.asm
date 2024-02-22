@@ -25,5 +25,5 @@ GDT_descriptor:
     dd GDT_start
 
 
-CODE_SEG equ GDT_code - GDT_start
-DATA_SEG equ GDT_data - GDT_start
+CODE_SEG equ GDT_code - GDT_start   ;  0x8
+DATA_SEG equ GDT_data - GDT_start   ;  0x10

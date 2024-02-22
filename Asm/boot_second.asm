@@ -21,19 +21,76 @@
 	call print_str
 	popa
 
+	; protected mode로 가기전에 memory map 로딩
+    mov bx, 0x0000	; 메모리맵 segment
+    mov es, bx
+    mov bx, 0x5C00	; 메모리맵 offset
+    mov di, bx
+	call load_memory_map	; es : di
+
 	call enable_A20line
 
 	; change to protected mode
     ; Install GDT
     cli
 	lgdt [GDT_descriptor]
-	
+	sti
+
 	; Switch 32 Bit
 	call SWITCH_32
 
-	cli                     ; off interrupt
+	;cli                     ; off interrupt
 	jmp CODE_SEG:Entry32Bit ; CS will be Auto-Updated to CODE_SEG
 	jmp $
+
+;=================================================================================
+; https://wiki.osdev.org/Detecting_Memory_(x86)#BIOS_Function:_INT_0x15.2C_EAX_.3D_0xE820
+; Input:
+;   es - buffer segment
+;   di - buffer offset
+load_memory_map:
+    xor ebx, ebx
+
+    ; Push initial buffer address
+    push di
+    ; Push initial entries count
+    mov eax, 0
+    push eax
+
+load_memory_map_loop:
+    ; Increment pointer in buffer
+    add di, 24
+
+    ; Increment entries count
+    pop eax
+    inc eax
+    push eax
+
+    ; Set magic number
+    mov edx, 0x534d4150
+
+    ; Set number of bytes to read
+    mov ecx, 24
+
+    ; Read memory map
+    mov eax, 0xe820
+    int 0x15
+    
+    ; Disable interrupts (can be enabled by int 0x15)
+    cli
+
+    ; Exit if ebx is equal to zero (reading has ended)
+    cmp ebx, 0
+    jne load_memory_map_loop
+
+    ; Store entries count at the begin of the buffer
+    pop eax
+    pop di
+    mov [di], eax
+    
+    ret
+
+;=================================================================================
 
 enable_A20line:
     push bp
