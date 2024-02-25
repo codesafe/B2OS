@@ -21,7 +21,7 @@ void k_init_mem(void* ptr, size_t size)
     head->used = false;
     head->length = size - header_len;
 
-    k_print("[INIT MEMORY]\n");
+    printf("[INIT MEMORY]\n");
 }
 
 // lame first-fit allocator
@@ -205,33 +205,33 @@ void displayMemoryInfo()
     //k_print("meminfo:\n");
     //kprint(" e820h:\n");
     mem_t mem = memget();
-    k_print("Lower memory: \0");
+    printf("Lower memory: \0");
 
-    int l = k_num2ascii(mem.lower_size, tmp);
-    k_print(tmp);
+    //int l = k_num2ascii(mem.lower_size, tmp);
+    printf(tmp);
     //kprintInt (mem.lower_size);
-    k_print(" KB\n\0");
+    printf(" KB\n\0");
 
-    k_print("  Upper memory: ");
+    printf("  Upper memory: ");
     //kprintInt (mem.upper_size);
-    k_num2ascii(mem.upper_size, tmp);
-    k_print(tmp);
-    k_print(" KB\n\0");
+    //k_num2ascii(mem.upper_size, tmp);
+    printf(tmp);
+    printf(" KB\n\0");
     
 
     //kprint("e801h:\n");
     mem = upper_memget();
-    k_print("Extended 1: \0");
+    printf("Extended 1: \0");
     //kprintInt(mem.lower_size);
-    k_num2ascii(mem.lower_size, tmp);
-    k_print(tmp);
-    k_print(" KB\n\0");
+    //k_num2ascii(mem.lower_size, tmp);
+    printf(tmp);
+    printf(" KB\n\0");
 
-    k_print("Extended 2: \0");
+    printf("Extended 2: \0");
     //kprintInt (mem.upper_size * 64);
-    k_num2ascii(mem.upper_size * 64, tmp);
-    k_print(tmp);    
-    k_print(" KB\n\0");
+    //k_num2ascii(mem.upper_size * 64, tmp);
+    printf(tmp);    
+    printf(" KB\n\0");
     
     //kprint("\n\nExtended 1 = Number of contiguous KB between 1 and 16 MB,");
     //kprint("\n             maximum 0x3C00 = 15 MB");

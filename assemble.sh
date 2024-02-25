@@ -13,6 +13,7 @@ nasm "Asm/boot_second.asm" -f bin -o "Out/boot_second.bin"
 # o -> elf format
 nasm "Asm/kernel_entry.asm" -f elf -o "Out/kernel_entry.o"
 nasm "Asm/interrupt.asm" -f elf -o "Out/interrupt.o"
+nasm "Asm/int32.asm" -f elf -o "Out/int32.o"
 
 
 # Compile C Kernel
@@ -27,6 +28,8 @@ i386-elf-gcc -ffreestanding -m32 -c "Src/isr.c" -o "Out/isr.o"
 i386-elf-gcc -ffreestanding -m32 -c "Src/idt.c" -o "Out/idt.o"
 i386-elf-gcc -ffreestanding -m32 -c "Src/util.c" -o "Out/util.o"
 i386-elf-gcc -ffreestanding -m32 -c "Src/memory.c" -o "Out/memory.o"
+i386-elf-gcc -ffreestanding -m32 -c "Src/vbe.c" -o "Out/vbe.o"
+#i386-elf-gcc -ffreestanding -m32 -c "Src/screen.c" -o "Out/screen.o"
 
 # apple2 emulator
 i386-elf-gcc -ffreestanding -m32 -c "Apple2/AppleMachine.c" -o "Out/AppleMachine.o"
@@ -40,10 +43,12 @@ i386-elf-ld -o "Out/full_kernel.bin" \
     -Ttext 0xF000 \
     Out/kernel_entry.o \
     Out/interrupt.o \
+    Out/int32.o \
     Out/kernel.o \
     Out/console.o \
     Out/low_level.o \
     Out/vga.o \
+    Out/vbe.o \
     Out/timer.o \
     Out/isr.o \
     Out/idt.o \

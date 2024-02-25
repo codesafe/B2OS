@@ -37,11 +37,19 @@
 	sti
 
 	; Switch 32 Bit
-	call SWITCH_32
+	call switch_32
 
 	;cli                     ; off interrupt
 	jmp CODE_SEG:Entry32Bit ; CS will be Auto-Updated to CODE_SEG
 	jmp $
+
+
+switch_32:					; clear interrupts
+	mov	eax, cr0			; set bit 0 in cr0--enter pmode
+	or	eax, 1
+	mov	cr0, eax
+	ret
+
 
 ;=================================================================================
 ; https://wiki.osdev.org/Detecting_Memory_(x86)#BIOS_Function:_INT_0x15.2C_EAX_.3D_0xE820
@@ -103,7 +111,6 @@ enable_A20line:
 
 %include "Asm/disk_read.asm"
 %include "Asm/gdt.asm"
-%include "Asm/switch32.asm"
 
 ;%include "Asm/memory.asm"
 

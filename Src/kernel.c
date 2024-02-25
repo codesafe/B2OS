@@ -18,14 +18,14 @@ static int frame = 0;
 
 void print_logo() 
 {
-	k_print("########   #######           #######   ######\n");
-	k_print("##     ## ##     ##         ##     ## ##    ##\n");
-	k_print("##     ##        ##         ##     ## ##\n");
-	k_print("########   #######  ####### ##     ##  ######\n");
-	k_print("##     ## ##                ##     ##       ##\n");
-	k_print("##     ## ##                ##     ## ##    ##\n");
-	k_print("########  #########          #######   ######\n");
-	k_print(" \n");
+	printf("########   #######           #######   ######\n");
+	printf("##     ## ##     ##         ##     ## ##    ##\n");
+	printf("##     ##        ##         ##     ## ##\n");
+	printf("########   #######  ####### ##     ##  ######\n");
+	printf("##     ## ##                ##     ##       ##\n");
+	printf("##     ## ##                ##     ## ##    ##\n");
+	printf("########  #########          #######   ######\n");
+	printf(" \n");
 }
 
 void malloctest()
@@ -34,26 +34,26 @@ void malloctest()
 	{
 		int size = k_rand() % 1000;
 		void *ptr = malloc(size);
-		k_print("MALLOC\n");
+		printf("MALLOC\n");
 		free(ptr);
 		k_sleep(100);
-		k_print("FREE\n");
+		printf("FREE\n");
 		k_sleep(100);
 	}
 }
 
 void init_kernel()
 {
-	k_init_console();
-	k_clear_console();
+	console_init(COLOR_WHITE, COLOR_BLACK);
+	console_clear(COLOR_WHITE, COLOR_BLACK);
     //print_logo();
 	k_init_isr();
-	k_init_timer(1000);
+	k_init_timer(500);
 	//k_sleep(100);
 	k_init_mem(g_memory, MAX_MEM_SIZE);
 	//displayMemoryInfo();
 	k_srand(global_tick);
-	k_sleep(1500);
+	k_sleep(500);
 	//malloctest();
 }
 
@@ -61,7 +61,7 @@ void init_A2()
 {
 	k_setVgaMode(WINDOW_SIZE_X, WINDOW_SIZE_Y, 24);
 	k_clearVga(0xFF00FF00);
-	k_swapBuffer();
+	//k_swapBuffer();
 	machine_InitMachine();
 }
 

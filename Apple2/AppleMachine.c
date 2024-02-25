@@ -7,7 +7,7 @@
 
 void machine_InitMachine()
 {
-	k_print("[Start Init APPLE2 Machine]\n");
+	printf("[Start Init APPLE2 Machine]\n");
 	// init cpu
 	ac_Init();
 	mem_Create();
@@ -22,7 +22,7 @@ void machine_InitMachine()
 	mem_WriteByte(0xD0, 0xAA);   // Planetoids won't work if this memory location equals zero
 	
 	ad_Create();
-	k_print("[Done APPLE2 Machine]\n");
+	printf("[Done APPLE2 Machine]\n");
 
 	ad_InsertFloppy(0);
 	

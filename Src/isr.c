@@ -77,7 +77,7 @@ void k_init_isr()
     // Set Interrupt Flag 인터럽트 시작
 	asm volatile("sti");
 
-    k_print("[INIT ISR]\n");
+    printf("[INIT ISR]\n");
 }
 
 /* To print the message which defines every exception */

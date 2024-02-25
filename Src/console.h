@@ -1,39 +1,58 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
+//#define NULL 0
 
-#define CONSOLE_BLACK    0
-#define CONSOLE_BLUE     1
-#define CONSOLE_GREEN    2
-#define CONSOLE_CYAN     3
-#define CONSOLE_RED      4
-#define CONSOLE_MAGENTA  5
-#define CONSOLE_BROWN    6
-#define CONSOLE_LIGHT_GREY   7
-#define CONSOLE_DARK_GREY    8
-#define CONSOLE_LIGHT_BLUE   9
-#define CONSOLE_LIGHT_GREEN  10
-#define CONSOLE_LIGHT_CYAN   11
-#define CONSOLE_LIGHT_RED    12
-#define CONSOLE_LIGHT_MAGENTA  13
-#define CONSOLE_LIGHT_BROWN  14
-#define CONSOLE_WHITE    15
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int uint32;
+typedef signed char sint8;
+typedef signed short sint16;
+typedef signed int sint32;
+typedef uint8 byte;
+typedef uint16 word;
+typedef uint32 dword;
 
-#define VIDEO_ADDRESS 0xb8000
-#define MAX_X 80
-#define MAX_Y 25
+#define VGA_ADDRESS        0xB8000
+#define VGA_TOTAL_ITEMS    2200
+#define VGA_WIDTH     80
+#define VGA_HEIGHT    24
 
-void k_init_console();
-void k_clear_console();
-void k_putc(char c, int x, int y);
-void k_print(char *str);
-void k_printn(char *str1, char *str2, char *str3 );
-void k_prinxy(char *str, int x, int y);
-int k_get_offset(int row, int col);
-int k_num2ascii(unsigned long n, char str[]);
-void k_printnum(unsigned long n);
+typedef enum 
+{
+    COLOR_BLACK,
+    COLOR_BLUE,
+    COLOR_GREEN,
+    COLOR_CYAN,
+    COLOR_RED,
+    COLOR_MAGENTA,
+    COLOR_BROWN,
+    COLOR_GREY,
+    COLOR_DARK_GREY,
+    COLOR_BRIGHT_BLUE,
+    COLOR_BRIGHT_GREEN,
+    COLOR_BRIGHT_CYAN,
+    COLOR_BRIGHT_RED,
+    COLOR_BRIGHT_MAGENTA,
+    COLOR_YELLOW,
+    COLOR_WHITE,
+} VGA_COLOR_TYPE;
 
-int k_strlen(char *str);
 
+uint16 vga_item_entry(uint8 ch, VGA_COLOR_TYPE fore_color, VGA_COLOR_TYPE back_color);
+void vga_set_cursor_pos(uint8 x, uint8 y);
+void vga_disable_cursor();
+
+void console_init(VGA_COLOR_TYPE fore_color, VGA_COLOR_TYPE back_color);
+void console_clear(VGA_COLOR_TYPE fore_color, VGA_COLOR_TYPE back_color);
+void console_scroll(int line_count);
+void console_putchar(char ch);
+void console_ungetchar();
+void console_ungetchar_bound(uint8 n);
+void console_gotoxy(uint16 x, uint16 y);
+void console_putstr(const char *str);
+void printf(const char *format, ...);
+void getstr(char *buffer);
+void getstr_bound(char *buffer, uint8 bound);
 
 #endif

@@ -743,7 +743,7 @@ void ad_setDrv(int drv)
 	disk[!drv].motorOn = false;                                                   // motor of the other drive is set to OFF
 	currentDrive = drv;                                                                 // set the current drive
 
-	k_print("SetDrive");
+	printf("SetDrive");
 }
 
 

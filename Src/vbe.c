@@ -149,11 +149,10 @@ Function code: 0x4F02
     regs3.bx = mode;  // 0 ~ 13 bit mode : 0x0112 (640x480 24/32*)
     int32(0x10, &regs3);
 
-    // k_printnum(vbeModeInfo->width);
-    // k_printnum(vbeModeInfo->height);
-    // k_printnum(vbeModeInfo->bpp);
-    // k_printnum(vbeModeInfo->pitch);
-
+    // printf("W:%d\n",vbeModeInfo->width);
+    // printf("H:%d\n",vbeModeInfo->height);
+    // printf("C:%d\n",vbeModeInfo->bpp);
+    // printf("B:%x\n",vbeModeInfo->framebuffer);
 
     frameBuffer = (unsigned int*)vbeModeInfo->framebuffer;
     kenel_frameBuffer = (unsigned char*)frameBuffer - 0xc0000000;

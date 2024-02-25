@@ -8,7 +8,7 @@ unsigned long int k_random_next = 1;
 void k_srand(unsigned int seed)
 {
     k_random_next = seed;
-	k_print("[INIT RANDOM]\n");
+	printf("[INIT RANDOM]\n");
 }
 
 int k_rand(void)

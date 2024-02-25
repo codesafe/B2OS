@@ -1,137 +1,274 @@
 #include "console.h"
 #include "util.h"
 #include "memory.h"
+#include "low_level.h"
 
-unsigned char *consolemem = 0;
-unsigned char cursorpos = 0;
-
-void k_init_console()
+uint16 vga_item_entry(uint8 ch, VGA_COLOR_TYPE fore_color, VGA_COLOR_TYPE back_color) 
 {
-  consolemem = (unsigned char *) VIDEO_ADDRESS;
+    uint16 ax = 0;
+    uint8 ah = 0, al = 0;
+
+    ah = back_color;
+    ah <<= 4;
+    ah |= fore_color;
+    ax = ah;
+    ax <<= 8;
+    al = ch;
+    ax |= al;
+
+    return ax;
 }
 
-void k_clear_console()
+void vga_set_cursor_pos(uint8 x, uint8 y) 
 {
-  for(int x=0; x<MAX_X; x++)
-    for(int y=0; y<MAX_Y; y++)
-      k_putc(' ', x, y);
-
-  cursorpos = 0;
+    uint16 cursorLocation = y * 80 + x;
+    port_byte_out(0x3D4, 14);
+    port_byte_out(0x3D5, cursorLocation >> 8);
+    port_byte_out(0x3D4, 15);
+    port_byte_out(0x3D5, cursorLocation);
 }
 
-void k_putc(char c, int x, int y)
+void vga_disable_cursor() 
 {
-  if( *consolemem == 0 ) return;
-  //unsigned char *consolemem = (unsigned char *) VIDEO_ADDRESS;
-  
-  int offset = k_get_offset(x, y);
-  consolemem[offset] = c;
-  consolemem[offset+1] = CONSOLE_WHITE;
+    port_byte_out(0x3D4, 10);
+    port_byte_out(0x3D5, 32);
 }
 
-void k_scrollup()
-{
-    for(int i=0; i<MAX_Y-1; i++)
-    {
-      // line(N+1) -> line(N)
-      memcpy(consolemem + (i*MAX_X*2), consolemem + ((i+1)*MAX_X*2) , MAX_X *2);
-    }
-    memset(consolemem + ((MAX_Y-1)*MAX_X*2), 0 ,MAX_X);
-} 
+/////////////////////////////////////////////////////////////////////////////////
 
-void k_print(char *str)
-{
-  if( cursorpos >= MAX_Y-1)
-  {
-      k_scrollup();
-      cursorpos = MAX_Y-1;
-      k_prinxy(str, 0, cursorpos);
-      return;
-  }
+static uint16 *g_vga_buffer;
+static uint32 g_vga_index;
+static uint8 cursor_pos_x = 0, cursor_pos_y = 0;
+uint8 g_fore_color = COLOR_WHITE, g_back_color = COLOR_BLACK;
 
-  k_prinxy(str, 0, cursorpos);
-  cursorpos++;
+void console_init(VGA_COLOR_TYPE fore_color, VGA_COLOR_TYPE back_color) 
+{
+    g_vga_buffer = (uint16 *)VGA_ADDRESS;
+    g_fore_color = fore_color;
+    g_back_color = back_color;
+    cursor_pos_x = 0;
+    cursor_pos_y = 0;
+    console_clear(fore_color, back_color);
 }
 
-void k_printn(char *str1, char *str2, char *str3 )
+void console_clear(VGA_COLOR_TYPE fore_color, VGA_COLOR_TYPE back_color) 
 {
-  int pos = 0;
-  char temp[80]={0,};
+    uint32 i;
+    for (i = 0; i < VGA_TOTAL_ITEMS; i++) 
+        g_vga_buffer[i] = vga_item_entry(0, fore_color, back_color);
 
-  if( str1 != NULL )
-  {
-      int len = k_strlen(str1);
-      memcpy(temp, str1, len);
-      temp[len] = '|';
-      pos+=len + 1;
-  }
-
-  if( str2 != NULL )
-  {
-      int len = k_strlen(str2);
-      memcpy(temp + pos, str2, len);
-      temp[len+pos] = '|';
-      pos+=len + 1;
-  }
-
-  if( str3 != NULL )
-  {
-      int len = k_strlen(str3);
-      memcpy(temp + pos, str3, len);
-  }
-  k_print(temp);
+    g_vga_index = 0;
+    cursor_pos_x = 0;
+    cursor_pos_y = 0;
+    vga_set_cursor_pos(cursor_pos_x, cursor_pos_y);
 }
 
-
-void k_prinxy(char *str, int x, int y)
+static void console_newline() 
 {
-    int len = 0;
-    while(1)
-    {
-      char c = str[len];
-      if(c == '\n' || c == '\0')
-        break;
-      k_putc(c, x+len, y);
-      len++;
+    if (cursor_pos_y >= VGA_HEIGHT) {
+        cursor_pos_x = 0;
+        cursor_pos_y = 0;
+        console_clear(g_fore_color, g_back_color);
+    } else {
+        g_vga_index += VGA_WIDTH - (g_vga_index % VGA_WIDTH);
+        cursor_pos_x = 0;
+        ++cursor_pos_y;
+        vga_set_cursor_pos(cursor_pos_x, cursor_pos_y);
     }
 }
 
-int k_get_offset(int x, int y)
+void console_putchar(char ch) 
 {
-  return 2 * (y * MAX_X + x);
+    if (ch == ' ') 
+    {
+        g_vga_buffer[g_vga_index++] = vga_item_entry(' ', g_fore_color, g_back_color);
+        vga_set_cursor_pos(cursor_pos_x++, cursor_pos_y);
+    }
+    if (ch == '\t') 
+    {
+        for(int i = 0; i < 4; i++) 
+        {
+            g_vga_buffer[g_vga_index++] = vga_item_entry(' ', g_fore_color, g_back_color);
+            vga_set_cursor_pos(cursor_pos_x++, cursor_pos_y);
+        }
+    } else if (ch == '\n') 
+    {
+        console_newline();
+    } 
+    else 
+    {
+        if (ch > 0) 
+        {
+            g_vga_buffer[g_vga_index++] = vga_item_entry(ch, g_fore_color, g_back_color);
+            vga_set_cursor_pos(++cursor_pos_x, cursor_pos_y);
+        }
+    }
 }
 
-int k_num2ascii(unsigned long n, char str[]) 
+void console_ungetchar() 
 {
-    char temp[64] = {0,};
-    int i = 0;
+    if(g_vga_index > 0) {
+        g_vga_buffer[g_vga_index--] = vga_item_entry(0, g_fore_color, g_back_color);
+        if(cursor_pos_x > 0) {
+            vga_set_cursor_pos(cursor_pos_x--, cursor_pos_y);
+        } else {
+            cursor_pos_x = VGA_WIDTH;
+            if (cursor_pos_y > 0)
+                vga_set_cursor_pos(cursor_pos_x--, --cursor_pos_y);
+            else
+                cursor_pos_y = 0;
+        }
+    }
+    g_vga_buffer[g_vga_index] = vga_item_entry(0, g_fore_color, g_back_color);
+}
+
+void console_ungetchar_bound(uint8 n) 
+{
+    if(((g_vga_index % VGA_WIDTH) > n) && (n > 0)) 
+    {
+        g_vga_buffer[g_vga_index--] = vga_item_entry(0, g_fore_color, g_back_color);
+        if(cursor_pos_x >= n) 
+        {
+            vga_set_cursor_pos(cursor_pos_x--, cursor_pos_y);
+        } 
+        else 
+        {
+            cursor_pos_x = VGA_WIDTH;
+            if (cursor_pos_y > 0)
+                vga_set_cursor_pos(cursor_pos_x--, --cursor_pos_y);
+            else
+                cursor_pos_y = 0;
+        }
+    }
+    g_vga_buffer[g_vga_index] = vga_item_entry(0, g_fore_color, g_back_color);
+}
+
+void console_gotoxy(uint16 x, uint16 y) 
+{
+    g_vga_index = (80 * y) + x;
+    cursor_pos_x = x;
+    cursor_pos_y = y;
+    vga_set_cursor_pos(cursor_pos_x, cursor_pos_y);
+}
+
+void console_putstr(const char *str) 
+{
+    uint32 index = 0;
+    while (str[index]) {
+        if (str[index] == '\n')
+            console_newline();
+        else
+            console_putchar(str[index]);
+        index++;
+    }
+}
+
+uint32 digit_count(int num)
+{
+  uint32 count = 0;
+  if(num == 0)
+    return 1;
+  while(num > 0){
+    count++;
+    num = num/10;
+  }
+  return count;
+}
+
+void itoa(char *buf, int base, int d) 
+{
+    char *p = buf;
+    char *p1, *p2;
+    unsigned long ud = d;
+    int divisor = 10;
+
+    if (base == 'd' && d < 0) 
+    {
+        *p++ = '-';
+        buf++;
+        ud = -d;
+    } 
+    else if (base == 'x')
+        divisor = 16;
+
     do 
     {
-        temp[i++] = n % 10 + '0';
-    } while ((n /= 10) > 0);
+        int remainder = ud % divisor;
+        *p++ = (remainder < 10) ? remainder + '0' : remainder + 'a' - 10;
+    } while (ud /= divisor);
 
-    temp[i] = '\0';
-
-    reverse(temp, str, i);
-    return i;
+    *p = 0;
+    p1 = buf;
+    p2 = p - 1;
+    while (p1 < p2) 
+    {
+        char tmp = *p1;
+        *p1 = *p2;
+        *p2 = tmp;
+        p1++;
+        p2--;
+    }
 }
 
-void k_printnum(unsigned long n)
+void printf(const char *format, ...) 
 {
-  char temp[64] = {0,};
-  k_num2ascii(n, temp);
-  k_print(temp);
+    char **arg = (char **)&format;
+    int c;
+    char buf[32];
+
+    arg++;
+    memset(buf, 0, sizeof(buf));
+    while ((c = *format++) != 0) 
+    {
+        if (c != '%')
+            console_putchar(c);
+        else 
+        {
+            char *p, *p2;
+            int pad0 = 0, pad = 0;
+
+            c = *format++;
+            if (c == '0') 
+            {
+                pad0 = 1;
+                c = *format++;
+            }
+
+            if (c >= '0' && c <= '9') 
+            {
+                pad = c - '0';
+                c = *format++;
+            }
+
+            switch (c) 
+            {
+                case 'd':
+                case 'u':
+                case 'x':
+                    itoa(buf, c, *((int *)arg++));
+                    p = buf;
+                    goto string;
+                    break;
+
+                case 's':
+                    p = *arg++;
+                    if (!p)
+                        p = "(null)";
+
+                string:
+                    for (p2 = p; *p2; p2++)
+                        ;
+                    for (; p2 < p + pad; p2++)
+                        console_putchar(pad0 ? '0' : ' ');
+                    while (*p)
+                        console_putchar(*p++);
+                    break;
+
+                default:
+                    console_putchar(*((int *)arg++));
+                    break;
+            }
+        }
+    }
 }
 
-int k_strlen(char *str)
-{
-  int len = 0;
-  while(1)
-  {
-    if( str[len] == 0 || str[len] == '\0' || str[len] == '\n')
-      break;
-    len++;
-  }
-
-  return len;
-}

@@ -1,4 +1,5 @@
 GDT_start:
+GDT_null:   ; Null segment, reserved by CPU
     dd 0x0
     dd 0x0
 
