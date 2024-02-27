@@ -1,3 +1,6 @@
+
+
+
 #include "console.h"
 #include "util.h"
 #include "memory.h"
@@ -272,3 +275,38 @@ void printf(const char *format, ...)
     }
 }
 
+int putchar(char c)
+{
+    console_putchar(c);
+}
+
+int puts(const char* str) 
+{
+    printf("%s\n", str);
+    return 1;
+}
+
+void panic(const char* func, unsigned int line, const char* fmt, ...) 
+{
+
+    // va_list va;
+    // va_start(va, fmt);
+
+    //putchar('\n');
+    //fbc_setfore(COLOR_RED_B);
+
+    if (func != NULL)
+        printf("[%s:%d] ", func, line);
+
+    printf("kernel panic: ");
+    //fbc_setfore(COLOR_RED);
+    //vprintf(fmt, va);
+    //va_end(va);
+
+    asm volatile("hlt");
+
+    for (;;)
+        ;
+
+    __builtin_unreachable();
+}

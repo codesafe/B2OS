@@ -50,7 +50,7 @@ void init_kernel()
 	k_init_isr();
 	k_init_timer(500);
 	//k_sleep(100);
-	k_init_mem(g_memory, MAX_MEM_SIZE);
+	k_init_mem();
 	//displayMemoryInfo();
 	k_srand(global_tick);
 	k_sleep(500);

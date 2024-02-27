@@ -2,16 +2,7 @@
 #define CONSOLE_H
 
 //#define NULL 0
-
-typedef unsigned char uint8;
-typedef unsigned short uint16;
-typedef unsigned int uint32;
-typedef signed char sint8;
-typedef signed short sint16;
-typedef signed int sint32;
-typedef uint8 byte;
-typedef uint16 word;
-typedef uint32 dword;
+#include "kerneldef.h"
 
 #define VGA_ADDRESS        0xB8000
 #define VGA_TOTAL_ITEMS    2200
@@ -51,8 +42,12 @@ void console_ungetchar();
 void console_ungetchar_bound(uint8 n);
 void console_gotoxy(uint16 x, uint16 y);
 void console_putstr(const char *str);
+int puts(const char* str);
+int putchar(char c);
 void printf(const char *format, ...);
 void getstr(char *buffer);
 void getstr_bound(char *buffer, uint8 bound);
+
+void panic(const char* func, unsigned int line, const char* fmt, ...);
 
 #endif
