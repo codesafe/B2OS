@@ -1,0 +1,30 @@
+{
+    "files.associations": {
+        "stdint.h": "c",
+        "idt_setup.h": "c",
+        "config.h": "c",
+        "pmem_tests.h": "c",
+        "ramdisk.h": "c",
+        "string.h": "c",
+        "stdlib.h": "c",
+        "kmalloc.h": "c",
+        "vga.h": "c",
+        "pmem.h": "c",
+        "malloc_tests.h": "c",
+        "sh_slabinfo.h": "c",
+        "sh_ls.h": "c",
+        "sh_write.h": "c",
+        "pic.h": "c",
+        "interrupt_tests.h": "c",
+        "pit_tests.h": "c",
+        "vmem_tests.h": "c",
+        "ramdisk_tests.h": "c",
+        "vmem.h": "c",
+        "process.h": "c",
+        "tss.h": "c",
+        "malloc.h": "c",
+        "sh_execbg.h": "c",
+        "sh_exec.h": "c",
+        "sh_sched.h": "c"
+    }
+}
