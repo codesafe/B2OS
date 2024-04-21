@@ -49,7 +49,7 @@ typedef struct
 #define low_16(address) (unsigned short)((address) & 0xFFFF)
 #define high_16(address) (unsigned short)(((address) >> 16) & 0xFFFF)
 
-#define MAX_MEM_SIZE    1024*1024*2 // ( 1MB )
+#define MAX_MEM_SIZE    1024*1024*10 // ( 10MB )
 
 #define panic_line(...) panic(__func__, __LINE__, __VA_ARGS__)
 

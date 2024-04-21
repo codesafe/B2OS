@@ -19,8 +19,24 @@ bool k_setVgaMode(int width, int height, int bpp)
 	// k_printnum(info->height);
 	// k_printnum(info->bpp);
 
-	for(int i=0;i<SCREEN_PAGE_NUM; i++)
-		screenbuffer[i] = (unsigned char *)malloc(width * height * 3);
+	// for(int i=0;i<SCREEN_PAGE_NUM; i++)
+    // {
+    //     screenbuffer[i] = (unsigned char *)malloc(width * height * 3);
+
+    //     unsigned char *screen = screenbuffer[i];
+    //     int color = 0xFF00FFFF;
+    //     for(int y=0; y<height; y++)
+    //         for(int x=0; x<width;x++)
+    //         {
+    //             uint32 pixel_offset = y*width + (x * 3);
+    //             screen[pixel_offset+0] = (color & 0xFF); 			//B
+    //             screen[pixel_offset+1] = (color & 0xFF00) >> 8; 	//G
+    //             screen[pixel_offset+2] = (color & 0xFF0000) >> 16;	//R
+    //         }
+
+    // }
+		
+
 
 	return true;
 }
@@ -28,12 +44,26 @@ bool k_setVgaMode(int width, int height, int bpp)
 
 void k_clearVga(unsigned int color)
 {
-	k_drawRect(0, 0, vgainfo->width, vgainfo->height, color);
+    unsigned char* frame = (unsigned char*)vgainfo->frameBuffer;
+    for(int i = 0; i < vgainfo->width * vgainfo->height; i++)
+    {
+        int offset = i*3;
+        frame[offset+0] = (color & 0xFF); 			//B
+        frame[offset+1] = (color & 0xFF00) >> 8; 	//G
+        frame[offset+2] = (color & 0xFF0000) >> 16;	//R
+    }
+
+	//k_drawRect(0, 0, vgainfo->width, vgainfo->height, color);
 }
 
 void k_drawPixel(unsigned int  x, unsigned int  y, unsigned int color)
 {
-
+    return;
+	unsigned char* frame = (unsigned char*)vgainfo->frameBuffer;
+    int offset = (vgainfo->width * y * 3) + (x * 3);
+    frame[offset+0] = (color & 0xFF); 			//B
+    frame[offset+1] = (color & 0xFF00) >> 8; 	//G
+    frame[offset+2] = (color & 0xFF0000) >> 16;	//R
 }
 
 void k_drawRect(unsigned int xpos, unsigned int ypos, unsigned int width, unsigned int height, unsigned int color)
@@ -59,11 +89,10 @@ void k_drawRect(unsigned int xpos, unsigned int ypos, unsigned int width, unsign
 
 void k_swapBuffer()
 {
-    // unsigned char* frame = (unsigned char*)vgainfo->frameBuffer;
-    // for(int i = 0; i < (vgainfo->width * vgainfo->height * 3); i++)
-    // {
-    //     frame[i] = screenbuffer[currentScreenpage][i];
-    // }
-
-	// currentScreenpage = currentScreenpage==0?1:0;
+    unsigned char* frame = (unsigned char*)vgainfo->frameBuffer;
+    for(int i = 0; i < (vgainfo->width * vgainfo->height * 3); i++)
+    {
+        frame[i] = screenbuffer[currentScreenpage][i];
+    }
+	currentScreenpage = currentScreenpage==0?1:0;
 }

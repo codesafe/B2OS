@@ -14,7 +14,7 @@ nasm "Asm/boot_second.asm" -f bin -o "Out/boot_second.bin"
 nasm "Asm/kernel_entry.asm" -f elf -o "Out/kernel_entry.o"
 nasm "Asm/interrupt.asm" -f elf -o "Out/interrupt.o"
 nasm "Asm/int32.asm" -f elf -o "Out/int32.o"
-nasm "Asm/paging.asm" -f elf -o "Out/paging.o"
+#nasm "Asm/paging.asm" -f elf -o "Out/paging.o"
 
 
 
@@ -31,8 +31,8 @@ i386-elf-gcc -ffreestanding -m32 -c "Src/idt.c" -o "Out/idt.o"
 i386-elf-gcc -ffreestanding -m32 -c "Src/util.c" -o "Out/util.o"
 i386-elf-gcc -ffreestanding -m32 -c "Src/memory.c" -o "Out/memory.o"
 i386-elf-gcc -ffreestanding -m32 -c "Src/vbe.c" -o "Out/vbe.o"
-i386-elf-gcc -ffreestanding -m32 -c "Src/memory/heap.c" -o "Out/heap.o"
-i386-elf-gcc -ffreestanding -m32 -c "Src/memory/page.c" -o "Out/page.o"
+#i386-elf-gcc -ffreestanding -m32 -c "Src/memory/heap.c" -o "Out/heap.o"
+#i386-elf-gcc -ffreestanding -m32 -c "Src/memory/page.c" -o "Out/page.o"
 
 
 # apple2 emulator
@@ -56,10 +56,7 @@ i386-elf-ld -o "Out/full_kernel.bin" \
     Out/timer.o \
     Out/isr.o \
     Out/idt.o \
-    Out/paging.o \
     Out/util.o \
-    Out/heap.o \
-    Out/page.o \
     Out/memory.o \
     Out/AppleMem.o \
     Out/AppleCpu.o \

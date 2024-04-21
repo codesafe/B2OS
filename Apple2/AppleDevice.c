@@ -41,6 +41,7 @@ BYTE keyboard = 0;
 // 이거 쓰지 않음
 //struct Color* backbuffer = NULL;	// Render Backbuffer
 unsigned char *colorbuffer = NULL;
+//unsigned char colorbuffer[SCREENSIZE_X * SCREENSIZE_Y];
 
 struct FloppyDrive disk[2];
 BYTE updatedrive;
@@ -743,7 +744,7 @@ void ad_setDrv(int drv)
 	disk[!drv].motorOn = false;                                                   // motor of the other drive is set to OFF
 	currentDrive = drv;                                                                 // set the current drive
 
-	printf("SetDrive");
+	//printf("SetDrive");
 }
 
 

@@ -20,14 +20,12 @@ void machine_InitMachine()
 	// dirty hack, fix soon... if I understand why
 	mem_WriteByte(0x4D, 0xAA);   // Joust crashes if this memory location equals zero
 	mem_WriteByte(0xD0, 0xAA);   // Planetoids won't work if this memory location equals zero
-	
-	ad_Create();
-	printf("[Done APPLE2 Machine]\n");
 
+	ad_Create();
 	ad_InsertFloppy(0);
-	
 	//machine_Booting();
 	machine_Reset();
+	printf("[Done APPLE2 Machine]\n");	
 }
 
 bool machine_Booting()

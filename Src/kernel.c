@@ -12,8 +12,7 @@
 #define WINDOW_SIZE_X 640
 #define WINDOW_SIZE_Y 480
 
-
-static unsigned char g_memory[MAX_MEM_SIZE];
+//static unsigned char g_memory[MAX_MEM_SIZE];
 static int frame = 0;
 
 void print_logo() 
@@ -59,8 +58,8 @@ void init_kernel()
 
 void init_A2()
 {
-	k_setVgaMode(WINDOW_SIZE_X, WINDOW_SIZE_Y, 24);
-	k_clearVga(0xFF00FF00);
+	//k_setVgaMode(WINDOW_SIZE_X, WINDOW_SIZE_Y, 24);
+	//k_clearVga(0xFF00FF00);
 	//k_swapBuffer();
 	machine_InitMachine();
 }
@@ -70,11 +69,14 @@ void kernel_loop()
 	//unsigned long p = 17050;
 	unsigned long p = 3050;	
 	machine_Run(p);
+	printf("Update Loop %d\n", frame);
 
 	// Render
 	machine_Render(frame);
 	if (frame++ > TARGET_FRAME) 
 	 	frame = 0;
+
+	printf("Render Loop %d\n", frame);		
 }
 
 #if 0
@@ -104,6 +106,13 @@ void kmain(void)
 	//runDemo();
 	while(1)
 	{
-		//kernel_loop();
+		kernel_loop();
+
+		// unsigned char color = k_rand() % 100;
+		// int x = k_rand() % WINDOW_SIZE_X;
+		// int y = k_rand() % WINDOW_SIZE_Y;
+		// k_drawPixel(x, y, color);
+
+
 	};
 }
